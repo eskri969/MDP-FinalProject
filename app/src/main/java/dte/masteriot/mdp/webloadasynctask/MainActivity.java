@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Camera;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -44,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
     ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
     ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
+    ArrayList<CameraObject> cameras = new ArrayList<>();
     private Button btLoad;
     ListView lv;
     XmlPullParserFactory parserFactory;
@@ -98,16 +100,20 @@ public class MainActivity extends AppCompatActivity {
                 parser.setInput(is, null);
                 String aux;
                 int eventType = parser.getEventType();
+                CameraObject camera = new CameraObject("","",null);
                 while (eventType != XmlPullParser.END_DOCUMENT) {
                     String elementName = null;
                     elementName = parser.getName();
                     switch (eventType) {
                         case XmlPullParser.START_TAG:
-                            if ("description".equals(elementName)) {
+                            if("Placemark".equals(elementName)){
+                                camera = new CameraObject("", "", null);
+                            }else if ("description".equals(elementName)) {
                                 String cameraURL = parser.nextText();
                                 cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
                                 cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
-                                camerasURLS_ArrayList.add(cameraURL);
+                                //camerasURLS_ArrayList.add(cameraURL);
+                                camera.setUrl(cameraURL);
                                 response+=cameraURL + "\n";
                             } else if ("Data".equals(elementName)) {
                                  aux=parser.getAttributeValue(null,"name");
@@ -118,6 +124,7 @@ public class MainActivity extends AppCompatActivity {
                                             aux1=parser.nextText();
                                             Log.v("aux1", aux1);
                                         nameURLS_ArrayList.add(aux1);
+                                        camera.setNombre(aux1);
                                     }else {
 
                                     };
@@ -127,8 +134,10 @@ public class MainActivity extends AppCompatActivity {
                                 //coorURLS_ArrayList.add(coorURL);
                                 String lat= coorURL.substring((coorURL.indexOf(","))+1, coorURL.length()-4);
                                 String lon = coorURL.substring(0, coorURL.indexOf(","));
-                                coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(),Double.valueOf(lon).doubleValue()));
+                               // coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(),Double.valueOf(lon).doubleValue()));
                                 // coor=new LatLng(Double.valueOf(parser.nextText()).doubleValue());
+                                camera.setCoordinates(new LatLng(Double.valueOf(lat).doubleValue(),Double.valueOf(lon).doubleValue()));
+                                cameras.add(camera);
                             }
                             break;
                     }
@@ -152,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
             */
             btLoad.setEnabled(true);
             lv = (ListView) findViewById(R.id.lv);
-            CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, nameURLS_ArrayList );
+            CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
             lv.setAdapter(countryArrayAdapter);
 
             lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
@@ -162,22 +171,26 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                    Object o = lv.getItemAtPosition(position);
-                    String str=(String)o;//As you are using Default String Adapter
+                    //Object o = lv.getItemAtPosition(position);
+                    CameraObject co = (CameraObject) lv.getItemAtPosition(position);
+                    //String str=(String)o;//As you are using Default String Adapter
+                    String str=(String)co.getNombre();
                     Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
-                    text.setText(camerasURLS_ArrayList.get(pos));
+                    //text.setText(camerasURLS_ArrayList.get(pos));
                     pos=position;
+                    text.setText(co.getUrl());
                     CargaImagenes task = new CargaImagenes();
-                    task.execute( camerasURLS_ArrayList.get(position) );
-
+                    //task.execute( camerasURLS_ArrayList.get(position) );
+                    task.execute(co);
                 }
             });
         }
     }
 
-    class CargaImagenes extends AsyncTask<String, Void, Bitmap>{
+    class CargaImagenes extends AsyncTask<CameraObject, Void, Bitmap>{
 
         ProgressDialog pDialog;
+        CameraObject url;
 
         @Override
         protected void onPreExecute() {
@@ -188,11 +201,11 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Bitmap doInBackground(String... params) {
+        protected Bitmap doInBackground(CameraObject... params) {
             // TODO Auto-generated method stub
             Log.i("doInBackground" , "Entra en doInBackground");
-            String url = params[0];
-            Bitmap imagen = descargarImagen(url);
+            url = params[0];
+            Bitmap imagen = descargarImagen(url.getUrl());
             return imagen;
         }
 
@@ -206,7 +219,8 @@ public class MainActivity extends AppCompatActivity {
                 public void onClick(View v){
                     Intent intent = new Intent (v.getContext(), MapsActivity.class);
                     Bundle args = new Bundle();
-                    args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
+                    args.putParcelable("coordinates", url.getCoordinates() );
+                    //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
                     intent.putExtra("bundle",args);
                     startActivity(intent);
                 }
@@ -228,11 +242,11 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 }
-class CamerasArrayAdapter extends ArrayAdapter<String> {
-    private ArrayList<String> items;
+class CamerasArrayAdapter extends ArrayAdapter<CameraObject> {
+    private ArrayList<CameraObject> items;
     private Context mContext;
 
-    CamerasArrayAdapter(Context context, ArrayList<String> cameras ) {
+    CamerasArrayAdapter(Context context, ArrayList<CameraObject> cameras ) {
         super( context, 0, cameras );
         items = cameras;
         mContext = context;
@@ -253,9 +267,9 @@ class CamerasArrayAdapter extends ArrayAdapter<String> {
 
         TextView textView = (TextView) newView.findViewById(R.id.textView);
 
-        String country = items.get(position);
+        CameraObject country = items.get(position);
 
-        textView.setText(country);
+        textView.setText(country.getNombre());
 
 
         return newView;
