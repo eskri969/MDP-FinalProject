@@ -157,12 +157,13 @@ public class MainActivity extends AppCompatActivity {
             lv = (ListView) findViewById(R.id.lv);
             lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-            ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,nameURLS_ArrayList);
+            ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,cameras);
             lv.setAdapter(adapter);
 
            // lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
 
             lv.setClickable(true);
+
             lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
                 @Override
@@ -171,15 +172,19 @@ public class MainActivity extends AppCompatActivity {
                     CameraObject co = (CameraObject) lv.getItemAtPosition(position);
                     //String str=(String)o;//As you are using Default String Adapter
                     String str=(String)co.getNombre();
-                    Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
+                    //Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
                     //text.setText(camerasURLS_ArrayList.get(pos));
                     pos=position;
-                    //text.setText(co.getUrl());
+                    //text.setText(str);
                     CargaImagenes task = new CargaImagenes();
                     //task.execute( camerasURLS_ArrayList.get(position) );
                     task.execute(co);
                 }
             });
+
+
+
+
         }
     }
 
