@@ -7,6 +7,7 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Camera;
 import android.graphics.Color;
+import android.os.Parcelable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -48,6 +49,11 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<String> names_ArrayList = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
     private boolean checked;
+    private int posicion;
+    Bitmap imagenGuardada;
+    ImageView targetImage;
+
+    Parcelable state;
 
     //private Button btLoad;
     ListView lv;
@@ -58,11 +64,26 @@ public class MainActivity extends AppCompatActivity {
     String auxcoor;
     Integer pos=0;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView( R.layout.activity_web_load);
         text =  (TextView) findViewById(R.id.textView);
+        targetImage = (ImageView)findViewById(R.id.imageView);
+        if(savedInstanceState!= null){
+            posicion = savedInstanceState.getInt("posicion");
+            imagenGuardada = savedInstanceState.getParcelable("imagen");
+            targetImage.setImageBitmap(imagenGuardada);
+
+
+        }
+
+
+        //  if(savedInstanceState!=null) {
+        //    mListInstanceState = savedInstanceState.getParcelable("salvada");
+        //}
+        
        // btLoad = (Button) findViewById( R.id.readWebpage );
         readKMLCameras();
         //adaptador = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_1, camerasURLS_ArrayList);
@@ -76,6 +97,25 @@ public class MainActivity extends AppCompatActivity {
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
     }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putInt("posicion", posicion);
+        outState.putParcelable("imagen",imagenGuardada);
+
+
+
+    }
+
+    @Override
+    public void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        posicion = savedInstanceState.getInt("posicion");
+        imagenGuardada = savedInstanceState.getParcelable("imagen");
+        targetImage.setImageBitmap(imagenGuardada);
+    }
+
 
     public void cambioColor() {
         Log.v("EEAA", "he entrado"  );
@@ -168,17 +208,42 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         protected void onPostExecute(String result) {
-
             lv = (ListView) findViewById(R.id.lv);
+
+
+
+
             lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+
+
 
             ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,names_ArrayList);
             lv.setAdapter(adapter);
 
 
+           // lv.onRestoreInstanceState(mListInstanceState);
+
            // lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
 
             lv.setClickable(true);
+
+            if(posicion != 0 ){
+
+                lv.setItemChecked(posicion,true);
+                CameraObject came = cameras.get(posicion);
+
+                Log.v("EEA", String.valueOf(imagenGuardada));
+                ImageView im = (ImageView)((AppCompatActivity) MainActivity.this).findViewById(R.id.imageView);
+                im.setImageBitmap(imagenGuardada);
+
+                //task.execute( camerasURLS_ArrayList.get(position) );
+
+
+
+
+            }
+
+
 
             lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
@@ -191,6 +256,8 @@ public class MainActivity extends AppCompatActivity {
                     //Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
                     //text.setText(camerasURLS_ArrayList.get(pos));
                     pos=position;
+                    posicion = position;
+
                     Log.v("EEA", "hola");
                    // text = (TextView) findViewById(R.id.textView);
                     Log.v("DESCRIPCION4",str);
@@ -205,11 +272,11 @@ public class MainActivity extends AppCompatActivity {
                     }
 
 
-
                     //text.setText(str);
                     CargaImagenes task = new CargaImagenes();
                     //task.execute( camerasURLS_ArrayList.get(position) );
                     task.execute(came);
+
                 }
             });
 
@@ -266,9 +333,11 @@ public class MainActivity extends AppCompatActivity {
                 HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
                 conn.connect();
                 imagen = BitmapFactory.decodeStream(conn.getInputStream());
+                imagenGuardada = imagen;
             }catch(IOException ex){
                 ex.printStackTrace();
             }
+
 
             return imagen;
         }
