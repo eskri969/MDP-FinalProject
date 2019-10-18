@@ -7,13 +7,19 @@ public class CameraObject {
     private String url;
     private String nombre;
     public LatLng coordinates;
+    private boolean checked = false;
 
 
     public CameraObject(String nombre, String url, LatLng coordinates) {
         this.nombre = nombre;
         this.url = url;
         this.coordinates = coordinates;
+        this.checked = false;
     }
+
+
+
+
 
     public void setNombre(String nombre) {
         this.nombre = nombre;

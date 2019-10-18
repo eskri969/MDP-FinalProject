@@ -44,8 +44,10 @@ public class MainActivity extends AppCompatActivity {
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
     ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
-    ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
+    ArrayList<String> names_ArrayList = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
+    private boolean checked;
+
     //private Button btLoad;
     ListView lv;
     XmlPullParserFactory parserFactory;
@@ -123,6 +125,7 @@ public class MainActivity extends AppCompatActivity {
                                             parser.nextTag();
                                             aux1=parser.nextText();
                                             Log.v("aux1", aux1);
+                                        names_ArrayList.add(aux1);
                                         nameURLS_ArrayList.add(aux1);
                                         camera.setNombre(aux1);
                                     }else {
@@ -157,8 +160,9 @@ public class MainActivity extends AppCompatActivity {
             lv = (ListView) findViewById(R.id.lv);
             lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-            ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,cameras);
+            ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,names_ArrayList);
             lv.setAdapter(adapter);
+
 
            // lv.setChoiceMode( ListView.CHOICE_MODE_SINGLE );
 
@@ -168,17 +172,32 @@ public class MainActivity extends AppCompatActivity {
 
                 @Override
                 public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                    //Object o = lv.getItemAtPosition(position);
-                    CameraObject co = (CameraObject) lv.getItemAtPosition(position);
-                    //String str=(String)o;//As you are using Default String Adapter
-                    String str=(String)co.getNombre();
+                    Object o = lv.getItemAtPosition(position);
+                    //CameraObject co = (CameraObject) lv.getItemAtPosition(position);
+                    String str=(String)o;//As you are using Default String Adapter
+                    //String str=(String)co.getNombre();
                     //Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
                     //text.setText(camerasURLS_ArrayList.get(pos));
                     pos=position;
+                    Log.v("EEA", "hola");
+                   // text = (TextView) findViewById(R.id.textView);
+                    Log.v("DESCRIPCION4",str);
+                   // Log.v("DESCRIPCION4", String.valueOf(co));
+                    CameraObject came = null;
+
+                    for(int i = 0; i < cameras.size(); i++){
+                        if(str == cameras.get(i).getNombre()){
+                            came = cameras.get(i);
+                            break;
+                        }
+                    }
+
+
+
                     //text.setText(str);
                     CargaImagenes task = new CargaImagenes();
                     //task.execute( camerasURLS_ArrayList.get(position) );
-                    task.execute(co);
+                    task.execute(came);
                 }
             });
 
