@@ -5,9 +5,7 @@
     android:id="@+id/linearLayout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical"
     tools:context=".MainActivity">
-
 
 
     <!--    <ScrollView-->
@@ -18,25 +16,21 @@
 
     <ListView
         android:id="@+id/lv"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
 
         android:layout_marginBottom="20dp"
 
-        android:layout_weight="57"
-        android:choiceMode="singleChoice" >
-
-    </ListView>
-
-
-
+        android:layout_weight="50"
+        android:choiceMode="singleChoice" />
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_margin="10dp"
-        android:layout_weight="42" />
+        android:layout_weight="50" />
+
 
     <!--        app:srcCompat="@mipmap/logoiotmaster"-->
 

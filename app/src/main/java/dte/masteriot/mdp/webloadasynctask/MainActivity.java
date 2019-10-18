@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Camera;
+import android.graphics.Color;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -74,6 +75,17 @@ public class MainActivity extends AppCompatActivity {
   //      text.setText( "Connecting to " + URL_CAMERAS );
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
+    }
+
+    public void cambioColor() {
+        Log.v("EEAA", "he entrado"  );
+        lv = (ListView) findViewById(R.id.lv);
+        lv.getChildAt(0).setBackgroundColor(Color.RED);
+        String v = String.valueOf(lv.getChildAt(0));
+        Log.v("EEAA", v  );
+
+
+
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
