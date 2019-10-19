@@ -41,11 +41,15 @@ public class MainActivity extends AppCompatActivity {
 
     //    private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
+    private static final String URL_MQTT_CHANNELS = "https://api.thingspeak.com/channels.xml?api_key=2W2DSAAQK6O84GGF";
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
-    ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
-    ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
+
+    ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
+    ArrayList<String> clienIdList = new ArrayList<>();
+
+
     private Button btLoad;
     ListView lv;
     XmlPullParserFactory parserFactory;
@@ -72,6 +76,8 @@ public class MainActivity extends AppCompatActivity {
   //      text.setText( "Connecting to " + URL_CAMERAS );
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
+        DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
+        taskMQTT.execute(URL_MQTT_CHANNELS);
     }
 
     private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
@@ -185,6 +191,113 @@ public class MainActivity extends AppCompatActivity {
                 }
             });
         }
+    }
+
+    private class DownloadMQTTChannlesTask extends AsyncTask<String, Void, String> {
+
+        private String contentType = "";
+
+        @Override
+        @SuppressWarnings( "deprecation" )
+        protected String doInBackground(String... urls) {
+            String response = "";
+
+            HttpURLConnection urlConnection = null;
+            try {
+                URL url = new URL( urls[0] );
+                urlConnection = (HttpURLConnection) url.openConnection();
+                contentType = urlConnection.getContentType();
+                InputStream is = urlConnection.getInputStream();
+                parserFactory = XmlPullParserFactory.newInstance();
+                XmlPullParser parser = parserFactory.newPullParser();
+
+                parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+                parser.setInput(is, null);
+                String aux;
+                int eventType = parser.getEventType();
+                MQTTChannelObject channel = new MQTTChannelObject(0,"",null,
+                        0,"","","");
+                String aux1;
+                //////////////////////////////
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    String elementName = null;
+                    elementName = parser.getName();
+                    switch (eventType) {
+                        case XmlPullParser.START_TAG:
+
+                            if("channel".equals(elementName)){
+                                Log.v("MQTTNEW", "new channel");
+                                channel  = new MQTTChannelObject(0,"",null,
+                                        0,"","","");
+                            }else if ("id".equals(elementName)) {
+                                String id = parser.nextText();
+                                Log.v("MQTTID", id);
+                                channel.setId(Integer.parseInt(id));
+                            }else if ("name".equals(elementName)) {
+                                String name = parser.nextText();
+                                Log.v("MQTTNAME", name);
+                                channel.setNombre(name);
+                            } else if ("latitude".equals(elementName)) {
+                                String lat = parser.nextText();
+                                Log.v("MQTTLAT", lat);
+                                parser.nextTag();
+                                String longit = parser.nextText();
+                                Log.v("MQTTLONG", longit);
+                                channel.setCoordinates(new LatLng(Double.valueOf(lat).doubleValue(),
+                                        Double.valueOf(longit).doubleValue()));
+                            }else if("last-entry-id".equals(elementName)){
+                                if(parser.getAttributeCount()==1) {
+                                    String laste = parser.nextText();
+                                    Log.v("MQTTLAST", laste);
+                                    channel.setLast_Entry(Integer.parseInt(laste));
+                                }
+                                else{
+                                    Log.v("MQTTLAST", "none");
+                                }
+                            }else if("api-key".equals(elementName)) {
+                                parser.nextTag();
+                                String apik = parser.nextText();
+                                //Log.v("MQTTKEY", apik);
+                                parser.nextTag();
+                                String apif = parser.nextText();
+                                Log.v("MQTTKEYF", apif);
+                                if(apif.equals("true")){
+                                    Log.v("MQTTKEYRW", apik);
+                                    channel.setWriteKey(apik);
+                                }
+                                else{
+                                    Log.v("MQTTKEYR", apik);
+                                    channel.setReadKey(apik);
+                                    MQTTchannels.add(channel);
+                                }
+
+                            }
+                            break;
+                    }
+                    eventType = parser.next();
+                }
+
+            } catch (Exception e) {
+                response = e.toString();
+            }
+
+            return response;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            for( int i=0; i<MQTTchannels.size();i++) {
+                if(!clienIdList.contains("client"+i)) {
+                    clienIdList.add("client"+i);
+                    Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
+                    MQTT_handler mqtthand = new MQTT_handler(i,
+                            "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey(),
+                            getApplicationContext());
+                }
+            }
+
+        }
+
     }
 
     class CargaImagenes extends AsyncTask<CameraObject, Void, Bitmap>{
