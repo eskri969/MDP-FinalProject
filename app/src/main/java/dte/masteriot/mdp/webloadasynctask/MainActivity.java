@@ -47,7 +47,8 @@ public class MainActivity extends AppCompatActivity {
     ArrayList<CameraObject> cameras = new ArrayList<>();
 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
-    ArrayList<String> clienIdList = new ArrayList<>();
+    private ArrayList<String> subscribedTopics = new ArrayList<>();
+
 
 
     private Button btLoad;
@@ -217,7 +218,6 @@ public class MainActivity extends AppCompatActivity {
                 int eventType = parser.getEventType();
                 MQTTChannelObject channel = new MQTTChannelObject(0,"",null,
                         0,"","","");
-                String aux1;
                 //////////////////////////////
                 while (eventType != XmlPullParser.END_DOCUMENT) {
                     String elementName = null;
@@ -268,7 +268,16 @@ public class MainActivity extends AppCompatActivity {
                                 else{
                                     Log.v("MQTTKEYR", apik);
                                     channel.setReadKey(apik);
-                                    MQTTchannels.add(channel);
+                                    boolean repeated=false;
+                                    for( int i=0; i<MQTTchannels.size();i++) {
+                                        if(MQTTchannels.get(i).getId()==channel.getId()){
+                                            repeated=true;
+                                            Log.v("MQTTREPEAT",""+channel.getId());
+                                        }
+                                    }
+                                    if(!repeated){
+                                        MQTTchannels.add(channel);
+                                    }
                                 }
 
                             }
@@ -287,12 +296,17 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(String result) {
             for( int i=0; i<MQTTchannels.size();i++) {
-                if(!clienIdList.contains("client"+i)) {
-                    clienIdList.add("client"+i);
+                if(!subscribedTopics.contains("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey())) {
+                    subscribedTopics.add("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
+
                     Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
-                    MQTT_handler mqtthand = new MQTT_handler(i,
-                            "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey(),
-                            getApplicationContext());
+                    MQTT_handler mqtthand = new MQTT_handler(i);
+                    mqtthand.MQTT_handler_start(MQTTchannels.get(i),getApplicationContext());
+                    //google.maps.geometry.spherical.computeDistanceBetween
+
+                }
+                else{
+                    Log.v("MQTTCHAN","repeated "+"channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
                 }
             }
 

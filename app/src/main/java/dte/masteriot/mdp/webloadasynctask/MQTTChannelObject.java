@@ -1,6 +1,8 @@
 package dte.masteriot.mdp.webloadasynctask;
 import com.google.android.gms.maps.model.LatLng;
 
+import java.util.ArrayList;
+
 
 public class MQTTChannelObject {
 
