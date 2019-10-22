@@ -8,13 +8,13 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <Button
+<!--    <Button
         android:id="@+id/readWebpage"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="readKMLCameras"
         android:text="Load Cameras data" >
-    </Button>
+    </Button>-->
 
 <!--    <ScrollView-->
 <!--        android:layout_width="wrap_content"-->
@@ -25,19 +25,27 @@
         <ListView
             android:id="@+id/lv"
             android:layout_width="wrap_content"
-            android:layout_height="100dp" />
+            android:layout_height="100dp"
+            android:layout_marginBottom="20dp"
+            android:layout_weight="50"
+            android:choiceMode="singleChoice" >
+        </ListView>
+<!--
 
     <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="30dp" />
+-->
 
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="match_parent"
+        android:layout_width="300dp"
         android:layout_height="wrap_content"
-        android:layout_margin="30dp"/>
+        android:layout_margin="10dp"
+        android:layout_weight="50"
+        />
 
     <!--        app:srcCompat="@mipmap/logoiotmaster"-->
 
