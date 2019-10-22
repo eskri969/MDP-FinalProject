@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Camera;
+import android.location.Location;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 
@@ -217,7 +218,7 @@ public class MainActivity extends AppCompatActivity {
                 String aux;
                 int eventType = parser.getEventType();
                 MQTTChannelObject channel = new MQTTChannelObject(0,"",null,
-                        0,"","","");
+                        0,"","",null);
                 //////////////////////////////
                 while (eventType != XmlPullParser.END_DOCUMENT) {
                     String elementName = null;
@@ -228,7 +229,7 @@ public class MainActivity extends AppCompatActivity {
                             if("channel".equals(elementName)){
                                 Log.v("MQTTNEW", "new channel");
                                 channel  = new MQTTChannelObject(0,"",null,
-                                        0,"","","");
+                                        0,"","",null);
                             }else if ("id".equals(elementName)) {
                                 String id = parser.nextText();
                                 Log.v("MQTTID", id);
@@ -303,7 +304,8 @@ public class MainActivity extends AppCompatActivity {
                     MQTT_handler mqtthand = new MQTT_handler(i);
                     mqtthand.MQTT_handler_start(MQTTchannels.get(i),getApplicationContext());
                     //google.maps.geometry.spherical.computeDistanceBetween
-
+                    //Log.v("MQTTCAM",CameraProx(MQTTchannels.get(i)).getNombre());
+                    MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i)));
                 }
                 else{
                     Log.v("MQTTCHAN","repeated "+"channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
@@ -312,6 +314,29 @@ public class MainActivity extends AppCompatActivity {
 
         }
 
+    }
+
+    private CameraObject CameraProx(MQTTChannelObject channel){
+        float min=Float.MAX_VALUE;
+        float actual=0;
+        int index=0;
+        Location channelLoc=new Location("channelLoc");
+        channelLoc.setLatitude(channel.getCoordinates().latitude);
+        channelLoc.setLongitude(channel.getCoordinates().longitude);
+        for(int i=0; i<cameras.size();i++){
+            Location camera=new Location("camera");
+            camera.setLatitude(cameras.get(i).getCoordinates().latitude);
+            camera.setLongitude(cameras.get(i).getCoordinates().longitude);
+            actual=channelLoc.distanceTo(camera);
+
+            if (actual<min){
+                min=actual;
+                //Log.v("MQTTCAMD",""+min);
+                index=i;
+            }
+        }
+        Log.v("MQTTCAM",cameras.get(index).getNombre());
+        return  cameras.get(index);
     }
 
     class CargaImagenes extends AsyncTask<CameraObject, Void, Bitmap>{

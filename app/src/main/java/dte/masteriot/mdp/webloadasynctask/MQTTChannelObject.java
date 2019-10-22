@@ -11,12 +11,12 @@ public class MQTTChannelObject {
     private int last_Entry;
     private String writeKey;
     private String readKey;
-    private String closestCamera;
+    private CameraObject closestCamera;
     private int id;
 
 
     public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
-                             String readKey, String closestCamera) {
+                             String readKey, CameraObject closestCamera) {
         this.id = id;
         this.nombre = nombre;
         this.coordinates = coordinates;
@@ -47,7 +47,7 @@ public class MQTTChannelObject {
         this.readKey = readKey;
     }
 
-    public void setClosestCamera(String closestCamera){
+    public void setClosestCamera(CameraObject closestCamera){
         this.closestCamera = closestCamera;
     }
 
@@ -73,7 +73,7 @@ public class MQTTChannelObject {
         return readKey;
     }
 
-    public String getClosestCamera(){
+    public CameraObject getClosestCamera(){
         return closestCamera;
     }
 
