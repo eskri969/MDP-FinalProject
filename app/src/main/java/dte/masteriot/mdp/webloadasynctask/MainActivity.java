@@ -17,6 +17,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Collections;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -137,13 +138,8 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void cambioColor() {
-        Log.v("EEAA", "he entrado"  );
         lv = (ListView) findViewById(R.id.lv);
         lv.getChildAt(0).setBackgroundColor(Color.RED);
-        String v = String.valueOf(lv.getChildAt(0));
-        Log.v("EEAA", v  );
-
-
 
     }
 
@@ -229,15 +225,12 @@ public class MainActivity extends AppCompatActivity {
         protected void onPostExecute(String result) {
             lv = (ListView) findViewById(R.id.lv);
 
-
-
-
             lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-
-
+            Collections.sort(names_ArrayList);
 
             ArrayAdapter adapter = new ArrayAdapter(MainActivity.this,android.R.layout.simple_list_item_checked,names_ArrayList);
             lv.setAdapter(adapter);
+
 
 
            // lv.onRestoreInstanceState(mListInstanceState);
