@@ -49,7 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().position(datos));//.title("Marker in Sydney"));
         mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
         mMap.animateCamera( CameraUpdateFactory.zoomTo( 17.0f ) );
-        uno=(RadioButton) findViewById(R.id.hybrid);
+        uno=(RadioButton) findViewById(R.id.hibrido);
         dos=(RadioButton) findViewById(R.id.maps);
         tres=(RadioButton) findViewById(R.id.satelite);
     }

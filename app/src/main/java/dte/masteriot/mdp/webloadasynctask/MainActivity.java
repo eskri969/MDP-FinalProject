@@ -113,7 +113,26 @@ public class MainActivity extends AppCompatActivity {
         super.onRestoreInstanceState(savedInstanceState);
         posicion = savedInstanceState.getInt("posicion");
         imagenGuardada = savedInstanceState.getParcelable("imagen");
+
         targetImage.setImageBitmap(imagenGuardada);
+        targetImage.setOnClickListener( new View.OnClickListener(){
+            public void onClick(View v){
+
+
+                //onSaveInstanceState(Bundle.EMPTY);
+                //state.putParcelable("imagen",imagenGuardada);
+                imagenGuardada = null;
+
+                Intent intent = new Intent (v.getContext(), MapsActivity.class);
+                Bundle args = new Bundle();
+                args.putParcelable("coordinates",cameras.get(posicion).getCoordinates()  );
+                //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
+                intent.putExtra("bundle",args);
+                startActivity(intent);
+            }
+        });
+
+
     }
 
 
@@ -232,7 +251,7 @@ public class MainActivity extends AppCompatActivity {
                 lv.setItemChecked(posicion,true);
                 CameraObject came = cameras.get(posicion);
 
-                Log.v("EEA", String.valueOf(imagenGuardada));
+
                 ImageView im = (ImageView)((AppCompatActivity) MainActivity.this).findViewById(R.id.imageView);
                 im.setImageBitmap(imagenGuardada);
 
@@ -316,6 +335,12 @@ public class MainActivity extends AppCompatActivity {
             im.setImageBitmap(result);
             im.setOnClickListener( new View.OnClickListener(){
                 public void onClick(View v){
+
+
+                    //onSaveInstanceState(Bundle.EMPTY);
+                   //state.putParcelable("imagen",imagenGuardada);
+                    imagenGuardada = null;
+
                     Intent intent = new Intent (v.getContext(), MapsActivity.class);
                     Bundle args = new Bundle();
                     args.putParcelable("coordinates", url.getCoordinates() );
@@ -332,7 +357,11 @@ public class MainActivity extends AppCompatActivity {
                 imageUrl = new URL(imageHttpAddress);
                 HttpURLConnection conn = (HttpURLConnection) imageUrl.openConnection();
                 conn.connect();
+
+                Log.v("EEA", String.valueOf(conn.getInputStream()));
+
                 imagen = BitmapFactory.decodeStream(conn.getInputStream());
+
                 imagenGuardada = imagen;
             }catch(IOException ex){
                 ex.printStackTrace();
