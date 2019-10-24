@@ -46,7 +46,7 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
-
+    private static final String URL_MQTT_CHANNELS = "https://api.thingspeak.com/channels.xml?api_key=2W2DSAAQK6O84GGF";
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
@@ -67,6 +67,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     LatLng coor;
     String auxcoor;
     Integer pos=0;
+
+    ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
+    private ArrayList<String> subscribedTopics = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -103,6 +107,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
   //      text.setText( "Connecting to " + URL_CAMERAS );
         DownloadWebPageTask task = new DownloadWebPageTask();
         task.execute( URL_CAMERAS );
+        DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
+        taskMQTT.execute(URL_MQTT_CHANNELS);
     }
 
     @Override
@@ -346,39 +352,148 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             return imagen;
         }
     }
-}
-class CamerasArrayAdapter extends ArrayAdapter<CameraObject> {
-    private ArrayList<CameraObject> items;
-    private Context mContext;
 
-    CamerasArrayAdapter(Context context, ArrayList<CameraObject> cameras ) {
-        super( context, 0, cameras );
-        items = cameras;
-        mContext = context;
-    }
+    private class DownloadMQTTChannlesTask extends AsyncTask<String, Void, String> {
 
-    @Override
-    public View getView(int position, View convertView, ViewGroup parent ) {
+        private String contentType = "";
 
-        View newView = convertView;
+        @Override
+        @SuppressWarnings( "deprecation" )
+        protected String doInBackground(String... urls) {
+            String response = "";
 
-        // This approach can be improved for performance
-        if ( newView == null ) {
-            LayoutInflater inflater = (LayoutInflater) mContext
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            newView = inflater.inflate(R.layout.list, parent, false);
+            HttpURLConnection urlConnection = null;
+            try {
+                URL url = new URL( urls[0] );
+                urlConnection = (HttpURLConnection) url.openConnection();
+                contentType = urlConnection.getContentType();
+                InputStream is = urlConnection.getInputStream();
+                parserFactory = XmlPullParserFactory.newInstance();
+                XmlPullParser parser = parserFactory.newPullParser();
+
+                parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+                parser.setInput(is, null);
+                String aux;
+                int eventType = parser.getEventType();
+                MQTTChannelObject channel = new MQTTChannelObject(0,"",null,
+                        0,"","",null);
+                //////////////////////////////
+                while (eventType != XmlPullParser.END_DOCUMENT) {
+                    String elementName = null;
+                    elementName = parser.getName();
+                    switch (eventType) {
+                        case XmlPullParser.START_TAG:
+
+                            if("channel".equals(elementName)){
+                                Log.v("MQTTNEW", "new channel");
+                                channel  = new MQTTChannelObject(0,"",null,
+                                        0,"","",null);
+                            }else if ("id".equals(elementName)) {
+                                String id = parser.nextText();
+                                Log.v("MQTTID", id);
+                                channel.setId(Integer.parseInt(id));
+                            }else if ("name".equals(elementName)) {
+                                String name = parser.nextText();
+                                Log.v("MQTTNAME", name);
+                                channel.setNombre(name);
+                            } else if ("latitude".equals(elementName)) {
+                                String lat = parser.nextText();
+                                Log.v("MQTTLAT", lat);
+                                parser.nextTag();
+                                String longit = parser.nextText();
+                                Log.v("MQTTLONG", longit);
+                                channel.setCoordinates(new LatLng(Double.valueOf(lat).doubleValue(),
+                                        Double.valueOf(longit).doubleValue()));
+                            }else if("last-entry-id".equals(elementName)){
+                                if(parser.getAttributeCount()==1) {
+                                    String laste = parser.nextText();
+                                    Log.v("MQTTLAST", laste);
+                                    channel.setLast_Entry(Integer.parseInt(laste));
+                                }
+                                else{
+                                    Log.v("MQTTLAST", "none");
+                                }
+                            }else if("api-key".equals(elementName)) {
+                                parser.nextTag();
+                                String apik = parser.nextText();
+                                //Log.v("MQTTKEY", apik);
+                                parser.nextTag();
+                                String apif = parser.nextText();
+                                Log.v("MQTTKEYF", apif);
+                                if(apif.equals("true")){
+                                    Log.v("MQTTKEYRW", apik);
+                                    channel.setWriteKey(apik);
+                                }
+                                else{
+                                    Log.v("MQTTKEYR", apik);
+                                    channel.setReadKey(apik);
+                                    boolean repeated=false;
+                                    for( int i=0; i<MQTTchannels.size();i++) {
+                                        if(MQTTchannels.get(i).getId()==channel.getId()){
+                                            repeated=true;
+                                            Log.v("MQTTREPEAT",""+channel.getId());
+                                        }
+                                    }
+                                    if(!repeated){
+                                        MQTTchannels.add(channel);
+                                    }
+                                }
+
+                            }
+                            break;
+                    }
+                    eventType = parser.next();
+                }
+
+            } catch (Exception e) {
+                response = e.toString();
+            }
+
+            return response;
         }
-        //-----
 
-        TextView textView = (TextView) newView.findViewById(R.id.textView);
+        @Override
+        protected void onPostExecute(String result) {
+            for( int i=0; i<MQTTchannels.size();i++) {
+                if(!subscribedTopics.contains("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey())) {
+                    subscribedTopics.add("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
 
-        CameraObject country = items.get(position);
+                    Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
+                    MQTT_handler mqtthand = new MQTT_handler(i);
+                    mqtthand.MQTT_handler_start(MQTTchannels.get(i),getApplicationContext());
+                    //google.maps.geometry.spherical.computeDistanceBetween
+                    //Log.v("MQTTCAM",CameraProx(MQTTchannels.get(i)).getNombre());
+                    MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i)));
+                }
+                else{
+                    Log.v("MQTTCHAN","repeated "+"channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
+                }
+            }
 
-        textView.setText(country.getNombre());
+        }
 
-
-        return newView;
     }
+    private CameraObject CameraProx(MQTTChannelObject channel){
+        float min=Float.MAX_VALUE;
+        float actual=0;
+        int index=0;
+        Location channelLoc=new Location("channelLoc");
+        channelLoc.setLatitude(channel.getCoordinates().latitude);
+        channelLoc.setLongitude(channel.getCoordinates().longitude);
+        for(int i=0; i<cameras.size();i++){
+            Location camera=new Location("camera");
+            camera.setLatitude(cameras.get(i).getCoordinates().latitude);
+            camera.setLongitude(cameras.get(i).getCoordinates().longitude);
+            actual=channelLoc.distanceTo(camera);
+
+            if (actual<min){
+                min=actual;
+                //Log.v("MQTTCAMD",""+min);
+                index=i;
+            }
+        }
+        Log.v("MQTTCAM",cameras.get(index).getNombre());
+        return  cameras.get(index);
+    }
+
 }
-
-
