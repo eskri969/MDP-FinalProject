@@ -23,9 +23,9 @@
         android:layout_height="0dp"
         android:layout_marginBottom="20dp"
         android:layout_weight="57"
-        android:alpha="80"
-        android:background="#AD362A21"
-        android:backgroundTint="#B0A596 "
+            android:alpha="80"
+            android:background="#AD362A21"
+            android:backgroundTint="#B0A596 "
         android:choiceMode="singleChoice"
         android:dividerHeight="0dp">
 

@@ -6,7 +6,6 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:background="@drawable/ho"
-    android:orientation="vertical"
     tools:context=".MainActivity">
 
 
@@ -20,13 +19,11 @@
         android:id="@+id/lv"
         android:layout_width="0dp"
         android:layout_height="match_parent"
-
         android:layout_marginBottom="20dp"
+        android:layout_weight="50"
         android:alpha="80"
         android:background="#AD362A21"
         android:backgroundTint="#B0A596 "
-
-        android:layout_weight="50"
         android:choiceMode="singleChoice" />
 
     <ImageView

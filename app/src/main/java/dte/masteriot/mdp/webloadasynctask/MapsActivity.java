@@ -21,11 +21,14 @@ import android.widget.Button;
 import android.widget.RadioButton;
 import android.widget.Toast;
 
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
@@ -34,6 +37,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.List;
 
 import static java.lang.Double.parseDouble;
 
@@ -73,6 +77,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        /*if (location != null && datos != null){
+            finish();
+        }*/
+
+
         String url = getUrl(location, datos, "motorcar");
         new FetchURL(MapsActivity.this, this).execute(url, "motorcar");
         mMap = googleMap;
@@ -80,14 +89,26 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(datos));//.title("Marker in Sydney"));
         mMap.addMarker(new MarkerOptions().position(location)); //****
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
-        mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
+  //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
+  //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
         uno=(RadioButton) findViewById(R.id.hybrid);
         dos=(RadioButton) findViewById(R.id.maps);
         tres=(RadioButton) findViewById(R.id.satelite);
         po.add(location) .width(5).color(Color.RED);
         currentPolyline= mMap.addPolyline(po);
         currentPolyline.setVisible(true);
+        LatLngBounds.Builder builder = new LatLngBounds.Builder();
+        builder.include(datos);
+        builder.include(location);
+        LatLngBounds bounds = builder.build();
+        int width = getResources().getDisplayMetrics().widthPixels;
+        int height = getResources().getDisplayMetrics().heightPixels;
+        int padding = (int) (width * 0.15); // offset from edges of the map 10% of screen
+
+        CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
+
+        mMap.animateCamera(cu);
+        mMap.moveCamera(cu);
 
     }
     public void onRadioButtonClicked(View view) {

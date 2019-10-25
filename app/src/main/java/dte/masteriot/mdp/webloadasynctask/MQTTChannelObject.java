@@ -13,10 +13,11 @@ public class MQTTChannelObject {
     private String readKey;
     private CameraObject closestCamera;
     private int id;
+    MainActivity ma;
 
 
     public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
-                             String readKey, CameraObject closestCamera) {
+                             String readKey, CameraObject closestCamera, MainActivity ma) {
         this.id = id;
         this.nombre = nombre;
         this.coordinates = coordinates;
@@ -24,6 +25,7 @@ public class MQTTChannelObject {
         this.writeKey = writeKey;
         this.readKey = readKey;
         this.closestCamera = closestCamera;
+        this.ma=ma;
     }
     public void setId(int id){ this.id=id;}
 
@@ -38,7 +40,7 @@ public class MQTTChannelObject {
     public void setLast_Entry(int last_Entry){
         this.last_Entry = last_Entry;
         if(last_Entry>100){
-
+            ma.cambioColor(closestCamera.getNombre());
         }
     }
 
