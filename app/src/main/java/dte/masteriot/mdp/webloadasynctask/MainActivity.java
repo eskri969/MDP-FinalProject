@@ -26,19 +26,15 @@ import java.util.ArrayList;
 
 import android.os.AsyncTask;
 import android.util.Log;
-import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentActivity;
+
 
 import com.google.android.gms.maps.model.LatLng;
 
@@ -73,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     LatLng destino=null;
     String auxcoor;
     Integer pos = 0;
+    Integer nEmergencies=0;
 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
     private ArrayList<String> subscribedTopics = new ArrayList<>();
@@ -91,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         setContentView(R.layout.activity_web_load);
         text = (TextView) findViewById(R.id.textView);
         targetImage = (ImageView) findViewById(R.id.imageView);
+        lv = (ListView) findViewById(R.id.lv);
 
         if (savedInstanceState != null) {
             posicion = savedInstanceState.getInt("posicion");
@@ -218,12 +216,22 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             });
         }
 
-        public void cambioColor (String str) {
-            lv = (ListView) findViewById(R.id.lv);
-            int i = nameURLS_ArrayList.indexOf(str);
-            lv.getChildAt(i).setBackgroundColor(Color.RED);
-            String v = String.valueOf(lv.getChildAt(0));
-        }
+        public void cambioColor (String str, Integer señal) {
+            if(señal==1) {
+                nEmergencies++;
+                text.setText("Number of Emergencies: " + nEmergencies);
+                int i = nameURLS_ArrayList.indexOf(str);
+                lv.getChildAt(i).setBackgroundColor(Color.RED);
+                String v = String.valueOf(lv.getChildAt(0));
+            }else if(señal==0){
+                nEmergencies--;
+                text.setText("Number of Emergencies " + nEmergencies);
+                int i = nameURLS_ArrayList.indexOf(str);
+                lv.getChildAt(i).setBackgroundColor(Color.WHITE);
+                String v = String.valueOf(lv.getChildAt(0));
+
+            }
+            }
 
         @Override
         public void onLocationChanged (Location location){
@@ -540,7 +548,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         subscribedTopics.add("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
 
                         Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
-                        MQTT_handler mqtthand = new MQTT_handler(i);
+                        MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
                         mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
                         //google.maps.geometry.spherical.computeDistanceBetween
                         //Log.v("MQTTCAM",CameraProx(MQTTchannels.get(i)).getNombre());

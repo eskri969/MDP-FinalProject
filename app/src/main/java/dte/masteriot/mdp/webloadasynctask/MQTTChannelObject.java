@@ -37,10 +37,15 @@ public class MQTTChannelObject {
         this.coordinates = coordinates;
     }
 
-    public void setLast_Entry(int last_Entry){
-        this.last_Entry = last_Entry;
-        if(last_Entry>100){
-            ma.cambioColor(closestCamera.getNombre());
+    public void setLast_Entry(int last_entry){
+        if(last_entry>100) {
+            ma.cambioColor(closestCamera.getNombre(), 1);
+            this.last_Entry = last_entry;
+        }else {
+            if (this.last_Entry >= 100)
+                ma.cambioColor(closestCamera.getNombre(), 0);
+            this.last_Entry = last_entry;
+
         }
     }
 

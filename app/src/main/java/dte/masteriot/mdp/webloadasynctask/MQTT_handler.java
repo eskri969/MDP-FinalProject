@@ -29,10 +29,11 @@ public class MQTT_handler extends AppCompatActivity {
     private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
     private int clientId;
     private String subscriptionTopic;
-    private  MQTTChannelObject channel;
+    MQTTChannelObject ch;
 
-    public MQTT_handler(int clientId) {
+    public MQTT_handler(int clientId, MQTTChannelObject ch) {
         this.clientId = clientId;
+        this.ch = ch;
     }
 
 
@@ -62,7 +63,8 @@ public class MQTT_handler extends AppCompatActivity {
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 Log.v("MQTTH", "Incoming message for clientId"+clientId+": " + new String(message.getPayload()));
-                channel.setLast_Entry(parseInt(new String(message.getPayload(),"UTF-8")));
+                Integer aux = Integer.parseInt(new String(message.getPayload(),"UTF-8"));
+                ch.setLast_Entry(aux);
             }
 
             @Override

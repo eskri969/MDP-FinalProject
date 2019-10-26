@@ -17,6 +17,12 @@
     <!--        android:layout_weight="1"-->
     <!--        android:scrollbars="vertical" >-->
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Number of Emergencies: 0" />
+
     <ListView
         android:id="@+id/lv"
         android:layout_width="match_parent"
