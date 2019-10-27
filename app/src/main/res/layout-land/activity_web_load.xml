@@ -5,6 +5,7 @@
     android:id="@+id/linearLayout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
+    android:orientation="vertical"
     android:background="@drawable/ho"
     tools:context=".MainActivity">
 
@@ -14,6 +15,19 @@
     <!--        android:layout_height="0dp"-->
     <!--        android:layout_weight="1"-->
     <!--        android:scrollbars="vertical" >-->
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Number of Emergencies: 0" />
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="50"
+        android:orientation="horizontal">
 
     <ListView
         android:id="@+id/lv"
@@ -32,7 +46,7 @@
         android:layout_height="match_parent"
         android:layout_margin="10dp"
         android:layout_weight="50" />
-
+    </LinearLayout>
 
     <!--        app:srcCompat="@mipmap/logoiotmaster"-->
 

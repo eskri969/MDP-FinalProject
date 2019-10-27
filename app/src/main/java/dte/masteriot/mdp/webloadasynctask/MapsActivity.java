@@ -49,6 +49,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     LatLng datos, location;
     RadioButton uno, dos, tres;
     Polyline currentPolyline;
+    String nombre, contaminacion;
     PolylineOptions po = new PolylineOptions();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,6 +64,12 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
         location= (LatLng) parametros.getParcelable("location");
+        nombre = parametros.getString("nombre");
+        contaminacion = parametros.getString("contaminacion");
+        if(contaminacion==null){
+            contaminacion="no data";
+        }
+
 
     }
 
@@ -88,7 +95,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap = googleMap;
                 // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(datos).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));//.title("Marker in Sydney"));
+        mMap.addMarker(new MarkerOptions().position(datos).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)).title(nombre).snippet("Latest value: " + contaminacion));//.title("Marker in Sydney"));
         mMap.addMarker(new MarkerOptions().position(location)); //****
   //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
   //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );

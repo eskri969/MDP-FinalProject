@@ -7,6 +7,8 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import android.location.Location;
 import android.graphics.Color;
@@ -23,6 +25,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.List;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -38,6 +41,15 @@ import android.widget.Toast;
 
 import com.google.android.gms.maps.model.LatLng;
 
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.DisconnectedBufferOptions;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
+import org.eclipse.paho.client.mqttv3.MqttException;
+import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -51,16 +63,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
-    ArrayList<String> camerasURLS_ArrayList = new ArrayList<>();
-    ArrayList<LatLng> coorURLS_ArrayList = new ArrayList<>();
+   ArrayList<Integer> marcados = new ArrayList<>();
+   ArrayList<MQTT_handler> handlers = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
-    private boolean checked;
     private int posicion;
 
     Bitmap imagenGuardada;
     ImageView targetImage;
-    Parcelable state;
 
+    Boolean girado=false;
     ListView lv;
     XmlPullParserFactory parserFactory;
     ArrayAdapter adaptador;
@@ -74,10 +85,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
     private ArrayList<String> subscribedTopics = new ArrayList<>();
 
-    private final int REQUEST_FINE_LOCATION = 0;
-    private final int REQUEST_COARSE_LOCATION = 0;
-    private final int REQUEST_READ_EXTERNAL = 0;
-    private final int REQUEST_WRITE_EXTERNAL = 0;
+
     private final int REQUESTPERMISIONCODE = 0;
 
     LocationManager locationManager;
@@ -96,35 +104,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             targetImage.setImageBitmap(imagenGuardada);
         }
 
-        if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this,
-                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+        if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
 
-            if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
+                    ActivityCompat.checkSelfPermission(this, WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this,
-                        new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION},//, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE},
+                        new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE},
                         REQUESTPERMISIONCODE);
                 //REQUEST_FINE_LOCATION);
             }
-
-/*
-            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
-                        REQUEST_COARSE_LOCATION);
-            }
-            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                        REQUEST_READ_EXTERNAL);
-            }
-            if(ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)!= PackageManager.PERMISSION_GRANTED){
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        REQUEST_WRITE_EXTERNAL);
-            }
-*/
 
             // here to request the missing permissions, and then overriding
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
@@ -147,9 +138,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     Log.i("errorCheck", "YES");
                     boolean FineLocationPermission = grantResults[0] == PackageManager.PERMISSION_GRANTED;
                     boolean CoarseLocationPermission = grantResults[1] == PackageManager.PERMISSION_GRANTED;
-                   // boolean ReadStoragePermission = grantResults[2] == PackageManager.PERMISSION_GRANTED;
-                   // boolean WriteStoragePermission = grantResults[3] == PackageManager.PERMISSION_GRANTED;
-                    if (FineLocationPermission && CoarseLocationPermission ){//&& WriteStoragePermission && ReadStoragePermission) {
+                    boolean ReadStoragePermission = grantResults[2] == PackageManager.PERMISSION_GRANTED;
+                    boolean WriteStoragePermission = grantResults[3] == PackageManager.PERMISSION_GRANTED;
+                    if (FineLocationPermission && CoarseLocationPermission && WriteStoragePermission && ReadStoragePermission) {
                         Toast.makeText(MainActivity.this, "Permission Granted", Toast.LENGTH_LONG).show();
                         readKMLCameras();
                     } else {
@@ -182,14 +173,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             task.execute(URL_CAMERAS);
             DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
             taskMQTT.execute(URL_MQTT_CHANNELS);
+
         }
 
         @Override
         public void onSaveInstanceState (Bundle outState){
             super.onSaveInstanceState(outState);
+            //for(int i=0; i<=handlers.size(); i++){
+               // handlers.get(i).unsubscribeToTopic(subscribedTopics.get(i));
+            //}
             outState.putInt("posicion", posicion);
             outState.putParcelable("imagen", imagenGuardada);
             outState.putParcelable("location", coor);
+            outState.putInt("nEmer", nEmergencies);
             if(destino!=null) {
                 outState.putParcelable("destino", destino);
             }
@@ -198,10 +194,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         public void onRestoreInstanceState (Bundle savedInstanceState){
             super.onRestoreInstanceState(savedInstanceState);
             posicion = savedInstanceState.getInt("posicion");
+            girado=true;
             imagenGuardada = savedInstanceState.getParcelable("imagen");
             coor=savedInstanceState.getParcelable("location");
             destino=savedInstanceState.getParcelable("destino");
+            nEmergencies=0;//savedInstanceState.getInt("nEmer");
+            text.setText("Number emergencies: " + nEmergencies);
             targetImage.setImageBitmap(imagenGuardada);
+
             targetImage.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     imagenGuardada = null;
@@ -221,7 +221,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 nEmergencies++;
                 text.setText("Number of Emergencies: " + nEmergencies);
                 int i = nameURLS_ArrayList.indexOf(str);
-                lv.getChildAt(i).setBackgroundColor(Color.RED);
+                marcados.add(i);
+                //lv.getChildAt(i).setBackgroundColor(Color.RED);
+                View view = lv.getChildAt(1);
+                view.setBackgroundColor(Color.RED);
                 String v = String.valueOf(lv.getChildAt(0));
             }else if(señal==0){
                 nEmergencies--;
@@ -233,6 +236,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
             }
 
+    public void aplicaCambio (View view) {
+            //lv.getChildAt(i).setBackgroundColor(Color.RED);
+            view.setBackgroundColor(Color.RED);
+            String v = String.valueOf(lv.getChildAt(0));
+    }
+
         @Override
         public void onLocationChanged (Location location){
             coor = new LatLng(location.getLatitude(), location.getLongitude());
@@ -241,23 +250,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
 
         @Override
-        public void onStatusChanged (String s,int i, Bundle bundle){
-
-        }
+        public void onStatusChanged (String s,int i, Bundle bundle){ }
 
         @Override
-        public void onProviderEnabled (String s){
-
-        }
+        public void onProviderEnabled (String s){ }
 
         @Override
-        public void onProviderDisabled (String s){
+        public void onProviderDisabled (String s){ }
 
-        }
-
+    CameraObject came;
 
         private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
-
             private String contentType = "";
 
             @Override
@@ -335,13 +338,14 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             protected void onPostExecute(String result) {
 
                 lv = (ListView) findViewById(R.id.lv);
-                lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+               // lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 Collections.sort(nameURLS_ArrayList);
 
                 //CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
                 //lv.setAdapter(countryArrayAdapter);
                 ArrayAdapter adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
                 lv.setAdapter(adapter);
+
 
 
                 lv.setClickable(true);
@@ -368,7 +372,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         posicion = position;
                         //text.setText(co.getUrl());
 
-                        CameraObject came = null;
+                        came = null;
                         for (int i = 0; i < cameras.size(); i++) {
                             if (str == cameras.get(i).getNombre()) {
                                 came = cameras.get(i);
@@ -382,6 +386,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     }
                 });
+                /*for(int i=0; i<marcados.size();i++){
+                    View view = lv.getChildAt(1);
+                    aplicaCambio(view);
+                }*/
             }
         }
 
@@ -418,6 +426,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         imagenGuardada = null;
                         Intent intent = new Intent(v.getContext(), MapsActivity.class);
                         Bundle args = new Bundle();
+                        args.putString("nombre", came.getNombre() );
+                        args.putString("contaminacion", came.getContaminacion());
                         args.putParcelable("coordinates", url.getCoordinates());
                         args.putParcelable("location", coor);
                         //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
@@ -447,7 +457,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         class DownloadMQTTChannlesTask extends AsyncTask<String, Void, String> {
 
             private String contentType = "";
-
             @Override
             @SuppressWarnings("deprecation")
             protected String doInBackground(String... urls) {
@@ -550,24 +559,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
                         MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
                         mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
-                        //google.maps.geometry.spherical.computeDistanceBetween
-                        //Log.v("MQTTCAM",CameraProx(MQTTchannels.get(i)).getNombre());
-                        MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i)));
-                    } else {
+                      //  MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i).coordinates));
+                        handlers.add(mqtthand);
+                    } else  {
                         Log.v("MQTTCHAN", "repeated " + "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
-                    }
+                }
+                }
                 }
 
             }
 
-        }
-        private CameraObject CameraProx (MQTTChannelObject channel){
+
+        private CameraObject CameraProx (LatLng channel){
             float min = Float.MAX_VALUE;
             float actual = 0;
             int index = 0;
             Location channelLoc = new Location("channelLoc");
-            channelLoc.setLatitude(channel.getCoordinates().latitude);
-            channelLoc.setLongitude(channel.getCoordinates().longitude);
+            channelLoc.setLatitude(channel.latitude);
+            channelLoc.setLongitude(channel.longitude);
             for (int i = 0; i < cameras.size(); i++) {
                 Location camera = new Location("camera");
                 camera.setLatitude(cameras.get(i).getCoordinates().latitude);
@@ -583,4 +592,215 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             Log.v("MQTTCAM", cameras.get(index).getNombre());
             return cameras.get(index);
         }
+
+    public class MQTTChannelObject {
+
+        private String nombre;
+        private LatLng coordinates;
+        private int last_Entry;
+        private String writeKey;
+        private String readKey;
+        private CameraObject closestCamera;
+        private int id;
+        MainActivity ma;
+
+
+        public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
+                                 String readKey, CameraObject closestCamera, MainActivity ma) {
+            this.id = id;
+            this.nombre = nombre;
+            this.coordinates = coordinates;
+            this.last_Entry = last_Entry;
+            this.writeKey = writeKey;
+            this.readKey = readKey;
+            this.closestCamera = closestCamera;
+            this.ma=ma;
+        }
+        public void setId(int id){ this.id=id;}
+
+        public void setNombre(String nombre) {
+            this.nombre = nombre;
+        }
+
+        public void setCoordinates(LatLng coordinates) {
+            this.coordinates = coordinates;
+            setClosestCamera(CameraProx(coordinates));
+        }
+
+        public void setLast_Entry(int last_entry){
+            if(last_entry>100) {
+                cambioColor(closestCamera.getNombre(), 1);
+                this.last_Entry = last_entry;
+            }else {
+                if (this.last_Entry >= 100)
+                    cambioColor(closestCamera.getNombre(), 0);
+                this.last_Entry = last_entry;
+
+            }
+            closestCamera.setContaminacion(Integer.toString(last_entry));
+        }
+
+        public void setWriteKey(String writeKey){
+            this.writeKey = writeKey;
+        }
+
+        public void setReadKey(String readKey){
+            this.readKey = readKey;
+        }
+
+        public void setClosestCamera(CameraObject closestCamera){
+            this.closestCamera = closestCamera;
+        }
+
+        public int getId(){return id;}
+
+        public String getNombre() {
+            return nombre;
+        }
+
+        public LatLng getCoordinates() {
+            return coordinates;
+        }
+
+        public int getLast_Entry(){
+            return last_Entry;
+        }
+
+        public String getWriteKey(){
+            return writeKey;
+        }
+
+        public String getReadKey(){
+            return readKey;
+        }
+
+        public CameraObject getClosestCamera(){
+            return closestCamera;
+        }
+
+    }
+
+    public class MQTT_handler extends AppCompatActivity {
+
+        MqttAndroidClient mqttAndroidClient;
+
+        private final String serverURI = "tcp://mqtt.thingspeak.com:1883";
+        private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
+        private int clientId;
+        private String subscriptionTopic;
+       MQTTChannelObject ch;
+
+        public MQTT_handler(int clientId, MQTTChannelObject ch) {
+            this.clientId = clientId;
+            this.ch = ch;
+        }
+
+
+        public int MQTT_handler_start(final MQTTChannelObject channel, Context context) {
+
+            this.subscriptionTopic = "channels/" + channel.getId() + "/subscribe/fields/field1/" + channel.getReadKey();
+
+            mqttAndroidClient = new MqttAndroidClient(context, serverURI, "client" + this.clientId);
+            mqttAndroidClient.setCallback(new MqttCallbackExtended() {
+                @Override
+                public void connectComplete(boolean reconnect, String serverURI) {
+
+                    if (reconnect) {
+                        Log.v("MQTTH", "Reconnected to : " + serverURI);
+                        // Because Clean Session is true, we need to re-subscribe
+                        subscribeToTopic(subscriptionTopic);
+                    } else {
+                        Log.v("MQTTH", "Connected to: " + serverURI);
+                    }
+                }
+
+                @Override
+                public void connectionLost(Throwable cause) {
+                    Log.v("MQTTH", "The Connection was lost.");
+                }
+
+                @Override
+                public void messageArrived(String topic, MqttMessage message) throws Exception {
+                    //Log.v("MQTTH", "Incoming message for clientId"+clientId+": " + message.toString());
+                    //Integer aux = new Byte(message.getPayload()[0]).intValue();
+                    //Integer aux1= fromByteArray(message.getPayload());
+                    //Integer aux2 = Integer.parseInt(new    String (message.getPayload()));
+                    //Integer aux2 = byteArrayToInt(message.getPayload());
+                    String str = new String (message.getPayload());
+                    //String[] str2 = str.split(\);
+                    Integer aux2 = Integer.parseInt(str.substring(0,str.length()-1));
+                    ch.setLast_Entry(aux2);
+                }
+
+
+
+                @Override
+                public void deliveryComplete(IMqttDeliveryToken token) {
+                }
+            });
+
+            MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+            mqttConnectOptions.setAutomaticReconnect(true);
+            mqttConnectOptions.setCleanSession(true);
+
+            mqttConnectOptions.setUserName("user");
+            mqttConnectOptions.setPassword(MQTTKEY.toCharArray());
+
+            try {
+                //Log.v("Connecting to " + serverUri);
+                mqttAndroidClient.connect(mqttConnectOptions, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        DisconnectedBufferOptions disconnectedBufferOptions = new DisconnectedBufferOptions();
+                        disconnectedBufferOptions.setBufferEnabled(true);
+                        disconnectedBufferOptions.setBufferSize(100);
+                        disconnectedBufferOptions.setPersistBuffer(false);
+                        disconnectedBufferOptions.setDeleteOldestMessages(false);
+                        mqttAndroidClient.setBufferOpts(disconnectedBufferOptions);
+                        subscribeToTopic(subscriptionTopic);
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        Log.v("MQTTH", "Failed to connect to: " + serverURI);
+                    }
+                });
+
+
+            } catch (MqttException ex) {
+                ex.printStackTrace();
+            }
+            return 0;
+
+        }
+
+        public void subscribeToTopic(String subscriptionTopic) {
+            try {
+                mqttAndroidClient.subscribe(subscriptionTopic, 0, null, new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        Log.v("MQTTH", "Subscribed!");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                        Log.v("MQTTH", "Failed to subscribe");
+                    }
+                });
+            } catch (MqttException ex) {
+                System.err.println("Exception whilst subscribing");
+                ex.printStackTrace();
+            }
+        }
+        /*public void unsubscribeToTopic(String subscriptionTopic){
+            try {
+                    mqttAndroidClient.unsubscribe(subscriptionTopic);
+
+            } catch (MqttException ex) {
+                System.err.println("Exception whilst subscribing");
+                ex.printStackTrace();
+            }
+        }*/
+
+    }
 }

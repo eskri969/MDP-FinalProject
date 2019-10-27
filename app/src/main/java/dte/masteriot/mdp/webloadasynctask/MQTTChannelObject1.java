@@ -4,7 +4,7 @@ import com.google.android.gms.maps.model.LatLng;
 import java.util.ArrayList;
 
 
-public class MQTTChannelObject {
+public class MQTTChannelObject1 {
 
     private String nombre;
     private LatLng coordinates;
@@ -16,7 +16,7 @@ public class MQTTChannelObject {
     MainActivity ma;
 
 
-    public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
+    public MQTTChannelObject1(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
                              String readKey, CameraObject closestCamera, MainActivity ma) {
         this.id = id;
         this.nombre = nombre;

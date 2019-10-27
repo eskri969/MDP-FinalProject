@@ -16,6 +16,7 @@ import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import static java.lang.Integer.parseInt;
@@ -29,15 +30,15 @@ public class MQTT_handler extends AppCompatActivity {
     private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
     private int clientId;
     private String subscriptionTopic;
-    MQTTChannelObject ch;
+    MQTTChannelObject1 ch;
 
-    public MQTT_handler(int clientId, MQTTChannelObject ch) {
+    public MQTT_handler(int clientId, MQTTChannelObject1 ch) {
         this.clientId = clientId;
         this.ch = ch;
     }
 
 
-    public int MQTT_handler_start(final MQTTChannelObject channel, Context context) {
+    public int MQTT_handler_start(final MQTTChannelObject1 channel, Context context) {
 
         this.subscriptionTopic = "channels/" + channel.getId() + "/subscribe/fields/field1/" + channel.getReadKey();
 
@@ -62,9 +63,15 @@ public class MQTT_handler extends AppCompatActivity {
 
             @Override
             public void messageArrived(String topic, MqttMessage message) throws Exception {
-                Log.v("MQTTH", "Incoming message for clientId"+clientId+": " + new String(message.getPayload()));
-                Integer aux = Integer.parseInt(new String(message.getPayload(),"UTF-8"));
-                ch.setLast_Entry(aux);
+                //Log.v("MQTTH", "Incoming message for clientId"+clientId+": " + message.toString());
+                //Integer aux = new Byte(message.getPayload()[0]).intValue();
+                Integer aux1= fromByteArray(message.getPayload());
+                //Integer aux2 = Integer.parseInt(new String (message.getPayload()));
+                ch.setLast_Entry(aux1);
+            }
+
+            int fromByteArray(byte[] bytes) {
+                return ByteBuffer.wrap(bytes).getInt();
             }
 
             @Override
