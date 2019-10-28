@@ -29,7 +29,9 @@ import java.util.List;
 
 import android.os.AsyncTask;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
@@ -63,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
-   ArrayList<Integer> marcados = new ArrayList<>();
+   ArrayList<String> marcados = new ArrayList<>();
    ArrayList<MQTT_handler> handlers = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
     private int posicion;
@@ -221,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 nEmergencies++;
                 text.setText("Number of Emergencies: " + nEmergencies);
                 int i = nameURLS_ArrayList.indexOf(str);
-                marcados.add(i);
+              //  marcados.add(i);
                 //lv.getChildAt(i).setBackgroundColor(Color.RED);
                 View view = lv.getChildAt(1);
                 view.setBackgroundColor(Color.RED);
@@ -341,10 +343,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                // lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 Collections.sort(nameURLS_ArrayList);
 
-                //CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
-                //lv.setAdapter(countryArrayAdapter);
-                ArrayAdapter adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
-                lv.setAdapter(adapter);
+                CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
+                lv.setAdapter(countryArrayAdapter);
+                //ArrayAdapter adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
+                //lv.setAdapter(adapter);
 
 
 
@@ -362,10 +364,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
                     @Override
                     public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                        Object o = lv.getItemAtPosition(position);
-                        //CameraObject co = (CameraObject) lv.getItemAtPosition(position);
-                        String str = (String) o;//As you are using Default String Adapter
-                        //String str=(String)co.getNombre();
+                        //Object o = lv.getItemAtPosition(position);
+                        CameraObject co = (CameraObject) lv.getItemAtPosition(position);
+                        //String str = (String) o;//As you are using Default String Adapter
+                        String str=(String)co.getNombre();
                         //Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
                         //text.setText(camerasURLS_ArrayList.get(pos));
                         pos = position;
@@ -627,15 +629,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             setClosestCamera(CameraProx(coordinates));
         }
 
-        public void setLast_Entry(int last_entry){
-            if(last_entry>100) {
-                cambioColor(closestCamera.getNombre(), 1);
-                this.last_Entry = last_entry;
-            }else {
-                if (this.last_Entry >= 100)
-                    cambioColor(closestCamera.getNombre(), 0);
-                this.last_Entry = last_entry;
-
+        public void setLast_Entry(int last_entry) {
+            this.last_Entry = last_entry;
+            if (last_entry > 100){
+                nEmergencies++;
+                text.setText("Number of Emergencies " + nEmergencies);
             }
             closestCamera.setContaminacion(Integer.toString(last_entry));
         }
@@ -650,6 +648,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         public void setClosestCamera(CameraObject closestCamera){
             this.closestCamera = closestCamera;
+            marcados.add(closestCamera.getNombre());
         }
 
         public int getId(){return id;}
@@ -803,4 +802,58 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }*/
 
     }
+
+    class CamerasArrayAdapter extends ArrayAdapter<CameraObject> {
+        private ArrayList<CameraObject> items;
+        private Context mContext;
+
+        CamerasArrayAdapter(Context context, ArrayList<CameraObject> cameras ) {
+            super( context, 0, cameras );
+            items = cameras;
+            mContext = context;
+        }
+
+        @Override
+        public View getView(int position, View convertView, ViewGroup parent ) {
+
+            View newView = convertView;
+
+            // This approach can be improved for performance
+            if ( newView == null ) {
+                LayoutInflater inflater = (LayoutInflater) mContext
+                        .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+                newView = inflater.inflate(R.layout.list, parent, false);
+            }
+            //-----
+
+            TextView textView = (TextView) newView.findViewById(R.id.textView);
+
+            CameraObject country = items.get(position);
+
+            textView.setText(country.getNombre());
+            if(country.getContaminacion()!=null) {
+                if (Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(0))) {
+                    newView.setBackgroundColor(Color.RED);
+                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(1))) {
+                    newView.setBackgroundColor(Color.RED);
+                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(2))) {
+                    newView.setBackgroundColor(Color.RED);
+                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(3))) {
+                    newView.setBackgroundColor(Color.RED);
+
+
+                }else {
+                    newView.setBackgroundColor(Color.WHITE);
+                }
+
+            }else{
+                newView.setBackgroundColor(Color.WHITE);
+
+            }
+            return newView;
+        }
+    }
+
 }
+
+
