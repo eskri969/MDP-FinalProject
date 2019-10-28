@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.webloadasynctask;
+package dte.masteriot.mdp.emergencies;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

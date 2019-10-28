@@ -1,4 +1,4 @@
-package dte.masteriot.mdp.webloadasynctask;
+package dte.masteriot.mdp.emergencies;
 
 import android.Manifest;
 import android.app.ProgressDialog;
@@ -8,13 +8,11 @@ import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import android.location.Location;
 import android.graphics.Color;
 import android.location.LocationListener;
 import android.location.LocationManager;
-import android.os.Parcelable;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -25,7 +23,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
-import java.util.List;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -843,22 +840,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             textView.setText(country.getNombre());
             if(country.getContaminacion()!=null) {
-                if (Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(0))) {
+                if (Integer.parseInt(items.get(position).getContaminacion()) >= 100) {
                     newView.setBackgroundColor(Color.RED);
-                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(1))) {
-                    newView.setBackgroundColor(Color.RED);
-                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(2))) {
-                    newView.setBackgroundColor(Color.RED);
-                }else if(Integer.parseInt(items.get(position).getContaminacion()) >= 100 && items.get(position).getNombre().equals(marcados.get(3))) {
-                    newView.setBackgroundColor(Color.RED);
-
 
                 }else {
-                    newView.setBackgroundColor(Color.WHITE);
+                    newView.setBackgroundColor(Color.TRANSPARENT);
                 }
 
             }else{
-                newView.setBackgroundColor(Color.WHITE);
+                newView.setBackgroundColor(Color.TRANSPARENT);
 
             }
             return newView;

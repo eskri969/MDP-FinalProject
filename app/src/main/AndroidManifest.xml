@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    package="dte.masteriot.mdp.webloadasynctask">
+    package="dte.masteriot.mdp.emergencies">
 
 
     <!-- Permissions the Application Requires -->
@@ -46,10 +46,10 @@
             android:value="@string/google_maps_key" />
 
         <activity
-            android:name=".MapsActivity"
+            android:name="dte.masteriot.mdp.emergencies.MapsActivity"
 
             android:label="@string/title_activity_maps"></activity>
-        <activity android:name=".MainActivity">
+        <activity android:name="dte.masteriot.mdp.emergencies.MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

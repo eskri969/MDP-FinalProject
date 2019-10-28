@@ -24,6 +24,7 @@
         android:layout_height="wrap_content"
         android:onClick="onRadioButtonClicked"
         android:text="Map"
+        android:checked="true"
         android:layout_weight="1"></RadioButton>
     <RadioButton
         android:id="@+id/satelite"

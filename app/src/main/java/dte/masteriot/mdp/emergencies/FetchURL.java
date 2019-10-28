@@ -1,10 +1,8 @@
-package dte.masteriot.mdp.webloadasynctask;
+package dte.masteriot.mdp.emergencies;
 
 import android.content.Context;
 import android.os.AsyncTask;
 import android.util.Log;
-
-import com.google.android.gms.maps.model.LatLng;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
@@ -17,9 +15,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-
-import static java.lang.Double.parseDouble;
 
 /**
  * Created by Vishal on 10/20/2018.
