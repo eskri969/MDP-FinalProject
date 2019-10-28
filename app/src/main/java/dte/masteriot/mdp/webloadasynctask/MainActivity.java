@@ -69,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
    ArrayList<MQTT_handler> handlers = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
     private int posicion;
+    Boolean actualizacion=false;
 
     Bitmap imagenGuardada;
     ImageView targetImage;
@@ -217,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 }
             });
         }
-
+/*
         public void cambioColor (String str, Integer señal) {
             if(señal==1) {
                 nEmergencies++;
@@ -237,12 +238,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             }
             }
-
-    public void aplicaCambio (View view) {
-            //lv.getChildAt(i).setBackgroundColor(Color.RED);
-            view.setBackgroundColor(Color.RED);
-            String v = String.valueOf(lv.getChildAt(0));
-    }
+*/
 
         @Override
         public void onLocationChanged (Location location){
@@ -605,6 +601,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         private CameraObject closestCamera;
         private int id;
         MainActivity ma;
+        Boolean alert;
 
 
         public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
@@ -617,6 +614,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             this.readKey = readKey;
             this.closestCamera = closestCamera;
             this.ma=ma;
+            this.alert=false;
         }
         public void setId(int id){ this.id=id;}
 
@@ -631,10 +629,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         public void setLast_Entry(int last_entry) {
             this.last_Entry = last_entry;
-            if (last_entry > 100){
-                nEmergencies++;
                 text.setText("Number of Emergencies " + nEmergencies);
-            }
+
             closestCamera.setContaminacion(Integer.toString(last_entry));
         }
 
@@ -725,10 +721,25 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //Integer aux1= fromByteArray(message.getPayload());
                     //Integer aux2 = Integer.parseInt(new    String (message.getPayload()));
                     //Integer aux2 = byteArrayToInt(message.getPayload());
+
                     String str = new String (message.getPayload());
-                    //String[] str2 = str.split(\);
-                    Integer aux2 = Integer.parseInt(str.substring(0,str.length()-1));
+                    String str2=str.substring(str.length()-1, str.length());
+                    Integer aux2;
+                    if(str2.equals("\n")) {
+                         aux2 = Integer.parseInt(str.substring(0, str.length() - 1));
+                    }else{
+                         aux2 = Integer.parseInt(str);
+
+                    }
+                    if(ch.alert && aux2<100){
+                        nEmergencies--;
+                        ch.alert=false;
+                    }else if(!ch.alert && aux2>100){
+                        nEmergencies++;
+                        ch.alert=true;
+                    }
                     ch.setLast_Entry(aux2);
+
                 }
 
 
