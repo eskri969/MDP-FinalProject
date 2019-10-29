@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
+import java.util.Comparator;
 
 import android.os.AsyncTask;
 import android.util.Log;
@@ -58,7 +59,11 @@ import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
 import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
 public class MainActivity extends AppCompatActivity implements LocationListener {
-    private static final String URL_MQTT_CHANNELS = "https://api.thingspeak.com/channels.xml?api_key=2W2DSAAQK6O84GGF";
+
+    private final String serverURI = "tcp://mqtt.thingspeak.com:1883";
+    private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";//"AR779WGJO3VRONTH";//
+
+    private static final String URL_MQTT_CHANNELS ="https://api.thingspeak.com/channels.xml?api_key=2W2DSAAQK6O84GGF";// "https://api.thingspeak.com/channels.xml?api_key=PMCXXJU7ZJKZM2VO";
     private static final String URL_CAMERAS = "http://informo.madrid.es/informo/tmadrid/CCTV.kml";
     private TextView text;
     ArrayList<String> nameURLS_ArrayList = new ArrayList<>();
@@ -67,10 +72,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     ArrayList<CameraObject> cameras = new ArrayList<>();
     private int posicion;
     Boolean actualizacion=false;
-
+    String nombre="";
+    LatLng canal=null;
     Bitmap imagenGuardada;
     ImageView targetImage;
-
+    String contaminacion="";
     Boolean girado=false;
     ListView lv;
     XmlPullParserFactory parserFactory;
@@ -98,11 +104,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         targetImage = (ImageView) findViewById(R.id.imageView);
         lv = (ListView) findViewById(R.id.lv);
 
-        if (savedInstanceState != null) {
+    /*    if (savedInstanceState != null) {
             posicion = savedInstanceState.getInt("posicion");
             imagenGuardada = savedInstanceState.getParcelable("imagen");
             targetImage.setImageBitmap(imagenGuardada);
-        }
+        }*/
 
         if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -182,6 +188,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             //for(int i=0; i<=handlers.size(); i++){
                // handlers.get(i).unsubscribeToTopic(subscribedTopics.get(i));
             //}
+            if(came!=null) {
+                outState.putString("nombre", came.getNombre());
+                outState.getString("camera", came.getContaminacion());
+
+            }
             outState.putInt("posicion", posicion);
             outState.putParcelable("imagen", imagenGuardada);
             outState.putParcelable("location", coor);
@@ -198,44 +209,43 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             imagenGuardada = savedInstanceState.getParcelable("imagen");
             coor=savedInstanceState.getParcelable("location");
             destino=savedInstanceState.getParcelable("destino");
+            contaminacion=savedInstanceState.getString("contaminacion");
             nEmergencies=0;//savedInstanceState.getInt("nEmer");
+             nombre=savedInstanceState.getString("nombre");
+            canal=null;
+            for(int i =0; i<MQTTchannels.size();i++){
+                if(MQTTchannels.get(i).getClosestCamera().getNombre().equals(nombre)){
+                    canal=MQTTchannels.get(i).getCoordinates();
+                }
+            }
             text.setText("Number emergencies: " + nEmergencies);
             targetImage.setImageBitmap(imagenGuardada);
-
+            for(int i =0; i<MQTTchannels.size();i++){
+                if(MQTTchannels.get(i).getClosestCamera().equals(nombre)){
+                    canal=MQTTchannels.get(i).getCoordinates();
+                }
+            }
             targetImage.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
                     imagenGuardada = null;
                     Intent intent = new Intent(v.getContext(), MapsActivity.class);
                     Bundle args = new Bundle();
+                    if(contaminacion!=null) {
+                        args.putString("contaminacion", contaminacion);
+                    }else{
+                        args.putString("contaminacion", "no data");
+                    }
+                    args.putString("nombre", nombre);
                     args.putParcelable("coordinates", destino);
                     args.putParcelable("location", coor);
+                    args.putParcelable("canal", canal);
                     //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
                     intent.putExtra("bundle", args);
                     startActivity(intent);
                 }
             });
         }
-/*
-        public void cambioColor (String str, Integer señal) {
-            if(señal==1) {
-                nEmergencies++;
-                text.setText("Number of Emergencies: " + nEmergencies);
-                int i = nameURLS_ArrayList.indexOf(str);
-              //  marcados.add(i);
-                //lv.getChildAt(i).setBackgroundColor(Color.RED);
-                View view = lv.getChildAt(1);
-                view.setBackgroundColor(Color.RED);
-                String v = String.valueOf(lv.getChildAt(0));
-            }else if(señal==0){
-                nEmergencies--;
-                text.setText("Number of Emergencies " + nEmergencies);
-                int i = nameURLS_ArrayList.indexOf(str);
-                lv.getChildAt(i).setBackgroundColor(Color.WHITE);
-                String v = String.valueOf(lv.getChildAt(0));
 
-            }
-            }
-*/
 
         @Override
         public void onLocationChanged (Location location){
@@ -252,6 +262,31 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         @Override
         public void onProviderDisabled (String s){ }
+
+
+    private CameraObject CameraProx (LatLng channel){
+        float min = Float.MAX_VALUE;
+        float actual = 0;
+        int index = 0;
+        Location channelLoc = new Location("channelLoc");
+        channelLoc.setLatitude(channel.latitude);
+        channelLoc.setLongitude(channel.longitude);
+        for (int i = 0; i < cameras.size(); i++) {
+            Location camera = new Location("camera");
+            camera.setLatitude(cameras.get(i).getCoordinates().latitude);
+            camera.setLongitude(cameras.get(i).getCoordinates().longitude);
+            actual = channelLoc.distanceTo(camera);
+
+            if (actual < min) {
+                min = actual;
+                //Log.v("MQTTCAMD",""+min);
+                index = i;
+            }
+        }
+        Log.v("MQTTCAM", cameras.get(index).getNombre());
+        return cameras.get(index);
+    }
+
 
     CameraObject came;
 
@@ -335,7 +370,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 lv = (ListView) findViewById(R.id.lv);
                // lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 Collections.sort(nameURLS_ArrayList);
+                Collections.sort(cameras, new Comparator<CameraObject>() {
+                    @Override
+                    public int compare(CameraObject o1, CameraObject o2) {
+                        return o1.getNombre().compareTo(o2.getNombre());
 
+                    }
+                });
                 CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
                 lv.setAdapter(countryArrayAdapter);
                 //ArrayAdapter adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
@@ -421,11 +462,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         imagenGuardada = null;
                         Intent intent = new Intent(v.getContext(), MapsActivity.class);
                         Bundle args = new Bundle();
-                        args.putString("nombre", came.getNombre() );
                         args.putString("contaminacion", came.getContaminacion());
                         args.putParcelable("coordinates", url.getCoordinates());
                         args.putParcelable("location", coor);
+                        args.putString("nombre", came.getNombre() );
+                        LatLng canal=null;
+                        for(int i =0; i<MQTTchannels.size();i++){
+                            if(MQTTchannels.get(i).getClosestCamera().getNombre().equals(came.getNombre())){
+                                canal=MQTTchannels.get(i).getCoordinates();
+                            }
+                        }
+                        args.putParcelable("canal", canal);
                         //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
+
                         intent.putExtra("bundle", args);
                         startActivity(intent);
                     }
@@ -565,29 +614,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             }
 
 
-        private CameraObject CameraProx (LatLng channel){
-            float min = Float.MAX_VALUE;
-            float actual = 0;
-            int index = 0;
-            Location channelLoc = new Location("channelLoc");
-            channelLoc.setLatitude(channel.latitude);
-            channelLoc.setLongitude(channel.longitude);
-            for (int i = 0; i < cameras.size(); i++) {
-                Location camera = new Location("camera");
-                camera.setLatitude(cameras.get(i).getCoordinates().latitude);
-                camera.setLongitude(cameras.get(i).getCoordinates().longitude);
-                actual = channelLoc.distanceTo(camera);
-
-                if (actual < min) {
-                    min = actual;
-                    //Log.v("MQTTCAMD",""+min);
-                    index = i;
-                }
-            }
-            Log.v("MQTTCAM", cameras.get(index).getNombre());
-            return cameras.get(index);
-        }
-
     public class MQTTChannelObject {
 
         private String nombre;
@@ -597,8 +623,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         private String readKey;
         private CameraObject closestCamera;
         private int id;
-        MainActivity ma;
-        Boolean alert;
+        private MainActivity ma;
+        private Boolean alert;
 
 
         public MQTTChannelObject(int id, String nombre, LatLng coordinates, int last_Entry, String writeKey,
@@ -676,8 +702,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
         MqttAndroidClient mqttAndroidClient;
 
-        private final String serverURI = "tcp://mqtt.thingspeak.com:1883";
-        private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
+     //   private final String serverURI = "tcp://mqtt.thingspeak.com:1883";
+     //   private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
         private int clientId;
         private String subscriptionTopic;
        MQTTChannelObject ch;
@@ -799,15 +825,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 ex.printStackTrace();
             }
         }
-        /*public void unsubscribeToTopic(String subscriptionTopic){
-            try {
-                    mqttAndroidClient.unsubscribe(subscriptionTopic);
-
-            } catch (MqttException ex) {
-                System.err.println("Exception whilst subscribing");
-                ex.printStackTrace();
-            }
-        }*/
 
     }
 

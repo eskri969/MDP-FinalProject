@@ -21,6 +21,8 @@
         android:id="@+id/textView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="#B0A596"
+        android:textColor="#AD362A21"
         android:text="Number of Emergencies: 0" />
 
     <ListView

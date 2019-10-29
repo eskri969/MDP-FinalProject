@@ -2,40 +2,109 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_height="match_parent"
     android:layout_width="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:orientation="vertical">
+
+
+
 <LinearLayout
     android:layout_width="match_parent"
     android:orientation="horizontal"
     android:layout_height="wrap_content">
+
     <RadioGroup
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="horizontal">
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginRight="8dp"
+        android:gravity="center_horizontal"
+        android:orientation="horizontal"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
     <RadioButton
         android:id="@+id/hibrido"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:onClick="onRadioButtonClicked"
         android:text="Hibrido"
+        android:onClick="onRadioButtonClicked"
+        android:layout_width="80dp"
+        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:background="@drawable/radio_flat_selector"
+        android:button="@android:color/transparent"
+        android:paddingLeft="16dp"
+        android:paddingTop="3dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="3dp"
+        android:textColor="@color/radio_flat_text_selector"
         android:layout_weight="1"></RadioButton>
     <RadioButton
         android:id="@+id/maps"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:onClick="onRadioButtonClicked"
         android:text="Map"
         android:checked="true"
+        android:layout_width="80dp"
+        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:background="@drawable/radio_flat_selector"
+        android:button="@android:color/transparent"
+        android:paddingLeft="16dp"
+        android:paddingTop="3dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="3dp"
+        android:textColor="@color/radio_flat_text_selector"
         android:layout_weight="1"></RadioButton>
     <RadioButton
         android:id="@+id/satelite"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
         android:onClick="onRadioButtonClicked"
         android:text="Satelite"
+        android:layout_width="80dp"
+        android:gravity="center"
+        android:layout_height="wrap_content"
+        android:background="@drawable/radio_flat_selector"
+        android:button="@android:color/transparent"
+        android:paddingLeft="16dp"
+        android:paddingTop="3dp"
+        android:paddingRight="16dp"
+        android:paddingBottom="3dp"
+        android:textColor="@color/radio_flat_text_selector"
         android:layout_weight="1"></RadioButton>
+
     </RadioGroup>
 
 </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_height="wrap_content">
+        <RadioGroup
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+            <RadioButton
+                android:id="@+id/uno1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked1"
+                android:text="Visible"
+                android:checked="true"
+                android:layout_weight="1"></RadioButton>
+            <RadioButton
+                android:id="@+id/dos1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:onClick="onRadioButtonClicked1"
+                android:text="No visible"
+                android:layout_weight="1"></RadioButton>
+
+
+        </RadioGroup>
+
+    </LinearLayout>
+
 <fragment xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:map="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"

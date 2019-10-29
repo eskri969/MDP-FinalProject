@@ -1,8 +1,15 @@
 package dte.masteriot.mdp.emergencies;
 
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.view.View;
 import android.widget.RadioButton;
 
@@ -11,6 +18,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
@@ -26,8 +34,10 @@ import static java.lang.Double.parseDouble;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, TaskLoadedCallback {
 
     private GoogleMap mMap;
-    LatLng datos, location;
+    LatLng datos, location, canal=null;
     RadioButton uno, dos, tres;
+    RadioButton uno1, dos1;
+
     Polyline currentPolyline;
     String nombre, contaminacion;
     PolylineOptions po = new PolylineOptions();
@@ -44,6 +54,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
         location= (LatLng) parametros.getParcelable("location");
+        canal=(LatLng) parametros.getParcelable("canal");
         nombre = parametros.getString("nombre");
         contaminacion = parametros.getString("contaminacion");
         if(contaminacion==null){
@@ -65,10 +76,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        /*if (location != null && datos != null){
-            finish();
-        }*/
-
 
         String url = getUrl(location, datos, "motorcar");
         new FetchURL(MapsActivity.this, this).execute(url, "motorcar");
@@ -79,9 +86,17 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.addMarker(new MarkerOptions().position(location).title("Current position")); //****
   //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
   //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
+        if(canal!=null){
+            mMap.addMarker(new MarkerOptions().position(canal).icon(bitmapDescriptorFromVector(this, R.drawable.ic_marker1)).anchor(0.5f,0.5f).title("PELIGRO").snippet("Value: " + contaminacion + " NO2"));//.title("Marker in Sydney"));
+
+        }
+
+
         uno=(RadioButton) findViewById(R.id.hybrid);
         dos=(RadioButton) findViewById(R.id.maps);
         tres=(RadioButton) findViewById(R.id.satelite);
+        uno1=(RadioButton) findViewById(R.id.uno1);
+        dos1=(RadioButton) findViewById(R.id.dos1);
         po.add(location) .width(5).color(Color.RED);
         currentPolyline= mMap.addPolyline(po);
         currentPolyline.setVisible(true);
@@ -98,6 +113,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mMap.animateCamera(cu);
         mMap.moveCamera(cu);
 
+    }
+    private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
+        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
+        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
+        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+        vectorDrawable.draw(canvas);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
     public void onRadioButtonClicked(View view) {
         // Is the button now checked?
@@ -124,6 +147,30 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                   //  uno.setChecked(false);
                   //  dos.setChecked(false);
                     break;
+        }
+    }
+
+    public void onRadioButtonClicked1(View view) {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // Check which radio button was clicked
+        switch(view.getId()) {
+            case R.id.uno1:
+                if (checked)
+                    currentPolyline.setVisible(true);
+
+                //  dos.setChecked(false);
+                //  tres.setChecked(false);
+                break;
+            case R.id.dos1:
+                if (checked)
+                    currentPolyline.setVisible(false);
+                //  uno.setChecked(false);
+                //  tres.setChecked(false);
+
+                break;
+
         }
     }
 

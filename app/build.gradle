@@ -28,5 +28,7 @@ dependencies {
     implementation 'com.google.android.gms:play-services-maps:15.0.1'
     implementation files('libs/org.eclipse.paho.android.service-1.1.1.jar')
     implementation files('libs/org.eclipse.paho.client.mqttv3-1.1.1.jar')
+    implementation 'com.android.support:design:+'
+
 
 }
