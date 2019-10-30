@@ -87,6 +87,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     String auxcoor;
     Integer pos = 0;
     Integer nEmergencies=0;
+    int actualsubs=0;
+
 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
     private ArrayList<String> subscribedTopics = new ArrayList<>();
@@ -185,9 +187,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         @Override
         public void onSaveInstanceState (Bundle outState){
             super.onSaveInstanceState(outState);
-            //for(int i=0; i<=handlers.size(); i++){
-               // handlers.get(i).unsubscribeToTopic(subscribedTopics.get(i));
-            //}
+            for (int i = 0; i < handlers.size(); i++) {
+                Log.v("UNSUBS", "client" + handlers.get(i).clientId);
+                try {
+                    if(actualsubs>0) {
+                        handlers.get(i).unsubscribeToTopic(subscribedTopics.get(i));
+                        actualsubs--;
+                    }
+                }catch(Exception e){
+                    Log.v("UNSUBEX",e.toString());
+                }
+                if(handlers.get(i).mqttAndroidClient.isConnected()) {
+                    handlers.get(i).disconnect();
+                }
+            }
+            actualsubs=0;
             if(came!=null) {
                 outState.putString("nombre", came.getNombre());
                 outState.getString("camera", came.getContaminacion());
@@ -604,6 +618,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
                         MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
                         mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
+                        actualsubs++;
                       //  MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i).coordinates));
                         handlers.add(mqtthand);
                     } else  {
@@ -705,12 +720,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
      //   private final String serverURI = "tcp://mqtt.thingspeak.com:1883";
      //   private final String MQTTKEY = "7DEGZ7VUVSYT3NOR";
-        private int clientId;
+        private String clientId;
         private String subscriptionTopic;
        MQTTChannelObject ch;
 
-        public MQTT_handler(int clientId, MQTTChannelObject ch) {
-            this.clientId = clientId;
+        public MQTT_handler(int clientIdN, MQTTChannelObject ch) {
+            this.clientId = clientIdN+""+System.currentTimeMillis();
             this.ch = ch;
         }
 
@@ -824,6 +839,41 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             } catch (MqttException ex) {
                 System.err.println("Exception whilst subscribing");
                 ex.printStackTrace();
+            }
+        }
+        public void disconnect() {
+            try {
+                mqttAndroidClient.unregisterResources();
+                mqttAndroidClient.close();
+                mqttAndroidClient.disconnect(5);
+                mqttAndroidClient.setCallback(null);
+                mqttAndroidClient = null;
+                Thread.sleep(200);
+            }catch (MqttException | InterruptedException e){
+                e.printStackTrace();
+            }
+        }
+
+        public void unsubscribeToTopic(String subscriptionTopic) {
+            try {
+                IMqttToken unsubToken = mqttAndroidClient.unsubscribe(subscriptionTopic);
+                unsubToken.setActionCallback(new IMqttActionListener() {
+                    @Override
+                    public void onSuccess(IMqttToken asyncActionToken) {
+                        Log.v("MQTTH", "UNSubscribed!");
+                    }
+
+                    @Override
+                    public void onFailure(IMqttToken asyncActionToken,
+                                          Throwable exception) {
+                        Log.v("MQTTH", "Failed to UNsubscribe");
+                        // some error occurred, this is very unlikely as even if the client
+                        // did not had a subscription to the topic the unsubscribe action
+                        // will be successfully
+                    }
+                });
+            } catch (MqttException e) {
+                e.printStackTrace();
             }
         }
 
