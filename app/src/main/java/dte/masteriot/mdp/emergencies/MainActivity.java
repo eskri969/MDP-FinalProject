@@ -193,6 +193,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 outState.getString("camera", came.getContaminacion());
 
             }
+
             outState.putInt("posicion", posicion);
             outState.putParcelable("imagen", imagenGuardada);
             outState.putParcelable("location", coor);

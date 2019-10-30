@@ -19,7 +19,12 @@
     <TextView
         android:id="@+id/textView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_weight="5"
+        android:textSize="16sp"
+        android:alpha="80"
+        android:background="#AD362A21"
+        android:backgroundTint="#B0A596 "
         android:text="Number of Emergencies: 0" />
 
 
