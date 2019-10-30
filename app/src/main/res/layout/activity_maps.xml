@@ -84,7 +84,48 @@
         </RadioGroup>
 
     </LinearLayout>
+    <LinearLayout android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:backgroundTint="#A18E2A"
+        android:background="#A18E2A">
 
+
+    <RadioGroup android:orientation="horizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    <RadioButton android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="#FCFCFC"
+        android:drawableLeft="@drawable/car"
+        android:onClick="onRadioButtonClicked3"
+        android:layout_weight="50"
+        android:id="@+id/car"
+        android:checked="true"/>
+
+    <RadioButton android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="#FCFCFC"
+        android:drawableLeft="@drawable/scooter"
+        android:onClick="onRadioButtonClicked3"
+        android:layout_weight="50"
+        android:id="@+id/pie"/>
+
+    <RadioButton android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:textColor="#FCFCFC"
+        android:drawableLeft="@drawable/cycling"
+        android:onClick="onRadioButtonClicked3"
+        android:layout_weight="50"
+        android:id="@+id/bici"/>
+
+</RadioGroup>
+
+</LinearLayout>
     <LinearLayout
         android:layout_width="match_parent"
         android:orientation="horizontal"

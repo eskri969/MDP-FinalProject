@@ -31,15 +31,18 @@ import java.util.ArrayList;
 import static java.lang.Double.parseDouble;
 
 
+
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, TaskLoadedCallback {
 
     private GoogleMap mMap;
     LatLng datos, location, canal=null;
     RadioButton uno, dos, tres;
     RadioButton uno1, dos1;
+    RadioButton muno, mdos, mtres;
 
     Polyline currentPolyline;
     String nombre, contaminacion;
+    String mode = "motorcar";
     PolylineOptions po = new PolylineOptions();
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,7 +53,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
 
 
-                mapFragment.getMapAsync(this);
+        mapFragment.getMapAsync(this);
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
         location= (LatLng) parametros.getParcelable("location");
@@ -76,16 +79,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
-        String url = getUrl(location, datos, "motorcar");
-        new FetchURL(MapsActivity.this, this).execute(url, "motorcar");
+        String url = getUrl(location, datos, mode);
+        new FetchURL(MapsActivity.this, this).execute(url, mode);
         mMap = googleMap;
-                // Add a marker in Sydney and move the camera
+        // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
         mMap.addMarker(new MarkerOptions().position(datos).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)).title(nombre).snippet("Latest value: " + contaminacion));//.title("Marker in Sydney"));
         mMap.addMarker(new MarkerOptions().position(location).title("Current position")); //****
-  //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
-  //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
+        //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
+        //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
         if(canal!=null){
             mMap.addMarker(new MarkerOptions().position(canal).icon(bitmapDescriptorFromVector(this, R.drawable.ic_marker1)).anchor(0.5f,0.5f).title("PELIGRO").snippet("Value: " + contaminacion + " NO2"));//.title("Marker in Sydney"));
 
@@ -97,6 +99,10 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         tres=(RadioButton) findViewById(R.id.satelite);
         uno1=(RadioButton) findViewById(R.id.uno1);
         dos1=(RadioButton) findViewById(R.id.dos1);
+        muno=(RadioButton) findViewById(R.id.car);
+        mdos=(RadioButton) findViewById(R.id.bici);
+        mtres=(RadioButton) findViewById(R.id.pie);
+
         po.add(location) .width(5).color(Color.RED);
         currentPolyline= mMap.addPolyline(po);
         currentPolyline.setVisible(true);
@@ -131,22 +137,63 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case R.id.hibrido:
                 if (checked)
                     mMap.setMapType(4);
-                  //  dos.setChecked(false);
-                  //  tres.setChecked(false);
-                    break;
+                //  dos.setChecked(false);
+                //  tres.setChecked(false);
+                break;
             case R.id.maps:
                 if (checked)
                     mMap.setMapType(1);
-                  //  uno.setChecked(false);
-                  //  tres.setChecked(false);
+                //  uno.setChecked(false);
+                //  tres.setChecked(false);
 
-                    break;
+                break;
             case R.id.satelite:
                 if (checked)
                     mMap.setMapType(2);
-                  //  uno.setChecked(false);
-                  //  dos.setChecked(false);
-                    break;
+                //  uno.setChecked(false);
+                //  dos.setChecked(false);
+                break;
+        }
+    }
+
+    public void onRadioButtonClicked3(View view) {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.map);
+
+        // Check which radio button was clicked
+        switch(view.getId()) {
+            case R.id.bici:
+                if (checked)
+                    mode = "bicycle";
+
+                currentPolyline.remove();
+
+                mapFragment.getMapAsync(this);
+                //  dos.setChecked(false);
+                //  tres.setChecked(false);
+                break;
+            case R.id.pie:
+                if (checked)
+                    mode = "moped";
+
+                currentPolyline.remove();
+
+                mapFragment.getMapAsync(this);
+
+                //  uno.setChecked(false);
+                //  tres.setChecked(false);
+
+                break;
+            case R.id.car:
+                if (checked)
+                    mode = "motorcar";
+                currentPolyline.remove();
+                mapFragment.getMapAsync(this);
+                //  uno.setChecked(false);
+                //  dos.setChecked(false);
+                break;
         }
     }
 
@@ -180,13 +227,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String mode = "v=" + directionMode;
         String parameters = str_origin + "&" + str_dest + "&" + mode;
         String url = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&" + parameters; //+ "&key=" + getString(R.string.google_maps_key);
+        //Log.v("pau", url);
+
         return url;
     }
 
     @Override
     public void onTaskDone(Object... values) {
 
-        if(currentPolyline!=null)
+        if(currentPolyline != null)
             currentPolyline.remove();
         currentPolyline= mMap.addPolyline((PolylineOptions) values[0]);
     }
@@ -201,7 +250,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             po.add(ll);
 
         }
-     //   po.setPoints(cords);
+        //   po.setPoints(cords);
 
         currentPolyline.setPoints(cords);
     }
