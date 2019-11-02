@@ -88,6 +88,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     Integer pos = 0;
     Integer nEmergencies=0;
     int actualsubs=0;
+    Boolean cambio=false;
 
 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
@@ -197,8 +198,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 }catch(Exception e){
                     Log.v("UNSUBEX",e.toString());
                 }
-                if(handlers.get(i).mqttAndroidClient.isConnected()) {
-                    handlers.get(i).disconnect();
+                if(handlers.get(i).mqttAndroidClient!=null) {
+                    if (handlers.get(i).mqttAndroidClient.isConnected()) {
+                        handlers.get(i).disconnect();
+                    }
                 }
             }
             actualsubs=0;
@@ -216,9 +219,24 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 outState.putParcelable("destino", destino);
             }
         }
+    @Override
+    public void onResume(){
+        super.onResume();
+        if (cambio == true) {
+            for (int i = 0; i < MQTTchannels.size(); i++) {
+                MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
+                mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
+            }
+            cambio=false;
+        }
+
+    }
+
         @Override
         public void onRestoreInstanceState (Bundle savedInstanceState){
             super.onRestoreInstanceState(savedInstanceState);
+            DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
+            taskMQTT.execute(URL_MQTT_CHANNELS);
             posicion = savedInstanceState.getInt("posicion");
             girado=true;
             imagenGuardada = savedInstanceState.getParcelable("imagen");
@@ -256,6 +274,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     args.putParcelable("canal", canal);
                     //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
                     intent.putExtra("bundle", args);
+                    cambio=true;
                     startActivity(intent);
                 }
             });
@@ -491,6 +510,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
 
                         intent.putExtra("bundle", args);
+                        cambio=true;
                         startActivity(intent);
                     }
                 });
