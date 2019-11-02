@@ -71,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
    ArrayList<MQTT_handler> handlers = new ArrayList<>();
     ArrayList<CameraObject> cameras = new ArrayList<>();
     private int posicion;
-    Boolean actualizacion=false;
     String nombre="";
     LatLng canal=null;
     Bitmap imagenGuardada;
@@ -80,15 +79,15 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     Boolean girado=false;
     ListView lv;
     XmlPullParserFactory parserFactory;
-    ArrayAdapter adaptador;
-    private ImageView im;
     LatLng coor;
     LatLng destino=null;
-    String auxcoor;
     Integer pos = 0;
     Integer nEmergencies=0;
+
+    CameraObject came;
+
     int actualsubs=0;
-    Boolean cambio=false;
+    Boolean cambio=false, activity=false;
 
 
     ArrayList<MQTTChannelObject> MQTTchannels = new ArrayList<>();
@@ -107,12 +106,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         targetImage = (ImageView) findViewById(R.id.imageView);
         lv = (ListView) findViewById(R.id.lv);
 
-    /*    if (savedInstanceState != null) {
-            posicion = savedInstanceState.getInt("posicion");
-            imagenGuardada = savedInstanceState.getParcelable("imagen");
-            targetImage.setImageBitmap(imagenGuardada);
-        }*/
-
         if (ActivityCompat.checkSelfPermission(this, ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED || ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -123,22 +116,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 ActivityCompat.requestPermissions(this,
                         new String[]{ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE},
                         REQUESTPERMISIONCODE);
-                //REQUEST_FINE_LOCATION);
             }
-
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            //   return;
         }else{
             readKMLCameras();
         }
-
-
     }
 
+    public void readKMLCameras () {
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
+        onLocationChanged(location);
+
+        DownloadWebPageTask task = new DownloadWebPageTask();
+        task.execute(URL_CAMERAS);
+        DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
+        taskMQTT.execute(URL_MQTT_CHANNELS);
+
+    }
     @Override
     public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
         switch (requestCode) {
@@ -159,34 +153,12 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 } else {
                     finish();
                 }
-            /*case REQUEST_COARSE_LOCATION:{
-
-            }
-            case REQUEST_READ_EXTERNAL:{
-
-            }
-            case REQUEST_WRITE_EXTERNAL:{
-
-            }*/
             }
         }
     }
 
-        public void readKMLCameras () {
-            locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-            Location location = locationManager.getLastKnownLocation(locationManager.NETWORK_PROVIDER);
-            onLocationChanged(location);
-            //      btLoad.setEnabled(false);
-            //      text.setText( "Connecting to " + URL_CAMERAS );
-            DownloadWebPageTask task = new DownloadWebPageTask();
-            task.execute(URL_CAMERAS);
-            DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
-            taskMQTT.execute(URL_MQTT_CHANNELS);
-
-        }
-
-        @Override
-        public void onSaveInstanceState (Bundle outState){
+    @Override
+    public void onSaveInstanceState (Bundle outState){
             super.onSaveInstanceState(outState);
             for (int i = 0; i < handlers.size(); i++) {
                 Log.v("UNSUBS", "client" + handlers.get(i).clientId);
@@ -201,101 +173,101 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 if(handlers.get(i).mqttAndroidClient!=null) {
                     if (handlers.get(i).mqttAndroidClient.isConnected()) {
                         handlers.get(i).disconnect();
+
                     }
                 }
             }
-            actualsubs=0;
+            handlers.removeAll(handlers);
+
+            cambio=true;
             if(came!=null) {
                 outState.putString("nombre", came.getNombre());
                 outState.getString("camera", came.getContaminacion());
-
+            }
+            if(destino!=null) {
+                outState.putParcelable("destino", destino);
             }
 
             outState.putInt("posicion", posicion);
             outState.putParcelable("imagen", imagenGuardada);
             outState.putParcelable("location", coor);
             outState.putInt("nEmer", nEmergencies);
-            if(destino!=null) {
-                outState.putParcelable("destino", destino);
-            }
+            outState.putBoolean("cambio", cambio);
         }
+
     @Override
     public void onResume(){
         super.onResume();
-        if (cambio == true) {
-            for (int i = 0; i < MQTTchannels.size(); i++) {
-                MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
-                mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
-            }
-            cambio=false;
-        }
-
-    }
-
-        @Override
-        public void onRestoreInstanceState (Bundle savedInstanceState){
-            super.onRestoreInstanceState(savedInstanceState);
+        if(activity==true){
+            activity=false;
             DownloadMQTTChannlesTask taskMQTT = new DownloadMQTTChannlesTask();
             taskMQTT.execute(URL_MQTT_CHANNELS);
-            posicion = savedInstanceState.getInt("posicion");
-            girado=true;
-            imagenGuardada = savedInstanceState.getParcelable("imagen");
-            coor=savedInstanceState.getParcelable("location");
-            destino=savedInstanceState.getParcelable("destino");
-            contaminacion=savedInstanceState.getString("contaminacion");
-            nEmergencies=0;//savedInstanceState.getInt("nEmer");
-             nombre=savedInstanceState.getString("nombre");
-            canal=null;
-            for(int i =0; i<MQTTchannels.size();i++){
-                if(MQTTchannels.get(i).getClosestCamera().getNombre().equals(nombre)){
-                    canal=MQTTchannels.get(i).getCoordinates();
-                }
+        }
+    }
+
+    @Override
+    public void onRestoreInstanceState (Bundle savedInstanceState){
+        super.onRestoreInstanceState(savedInstanceState);
+        posicion = savedInstanceState.getInt("posicion");
+        girado=true;
+        cambio=savedInstanceState.getBoolean("cambio");
+        imagenGuardada = savedInstanceState.getParcelable("imagen");
+        coor=savedInstanceState.getParcelable("location");
+        destino=savedInstanceState.getParcelable("destino");
+        contaminacion=savedInstanceState.getString("contaminacion");
+        nEmergencies=0;//savedInstanceState.getInt("nEmer");
+        nombre=savedInstanceState.getString("nombre");
+        canal=null;
+        for(int i =0; i<MQTTchannels.size();i++){
+            if(MQTTchannels.get(i).getClosestCamera().getNombre().equals(nombre)){
+                canal=MQTTchannels.get(i).getCoordinates();
             }
-            text.setText("Number emergencies: " + nEmergencies);
-            targetImage.setImageBitmap(imagenGuardada);
-            for(int i =0; i<MQTTchannels.size();i++){
-                if(MQTTchannels.get(i).getClosestCamera().equals(nombre)){
-                    canal=MQTTchannels.get(i).getCoordinates();
-                }
+        }
+        text.setText("Number emergencies: " + nEmergencies);
+        targetImage.setImageBitmap(imagenGuardada);
+        for(int i =0; i<MQTTchannels.size();i++){
+            if(MQTTchannels.get(i).getClosestCamera().equals(nombre)){
+                canal=MQTTchannels.get(i).getCoordinates();
             }
-            targetImage.setOnClickListener(new View.OnClickListener() {
+        }
+        targetImage.setOnClickListener(new View.OnClickListener() {
                 public void onClick(View v) {
-                    imagenGuardada = null;
-                    Intent intent = new Intent(v.getContext(), MapsActivity.class);
-                    Bundle args = new Bundle();
-                    if(contaminacion!=null) {
+                imagenGuardada = null;
+                Intent intent = new Intent(v.getContext(), MapsActivity.class);
+                Bundle args = new Bundle();
+                if(contaminacion!=null) {
                         args.putString("contaminacion", contaminacion);
                     }else{
                         args.putString("contaminacion", "no data");
                     }
-                    args.putString("nombre", nombre);
-                    args.putParcelable("coordinates", destino);
-                    args.putParcelable("location", coor);
-                    args.putParcelable("canal", canal);
-                    //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
-                    intent.putExtra("bundle", args);
-                    cambio=true;
-                    startActivity(intent);
-                }
+                args.putString("nombre", nombre);
+                args.putParcelable("coordinates", destino);
+                args.putParcelable("location", coor);
+                args.putParcelable("canal", canal);
+                //args.putParcelable("coordinates", coorURLS_ArrayList.get(pos));
+                intent.putExtra("bundle", args);
+                startActivity(intent);
+                cambio=true;
+            }
             });
-        }
+    }
 
 
-        @Override
-        public void onLocationChanged (Location location){
+    @Override
+    public void onLocationChanged (Location location){
             coor = new LatLng(location.getLatitude(), location.getLongitude());
             // textview.setText("Longitude:   "+longitude+"   Latitide:  "+latitude);
 
         }
 
-        @Override
-        public void onStatusChanged (String s,int i, Bundle bundle){ }
+    @Override
+    public void onStatusChanged (String s,int i, Bundle bundle){ }
 
-        @Override
-        public void onProviderEnabled (String s){ }
+    @Override
+    public void onProviderEnabled (String s){ }
 
-        @Override
-        public void onProviderDisabled (String s){ }
+    @Override
+    public void onProviderDisabled (String s){ }
 
 
     private CameraObject CameraProx (LatLng channel){
@@ -313,7 +285,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
 
             if (actual < min) {
                 min = actual;
-                //Log.v("MQTTCAMD",""+min);
                 index = i;
             }
         }
@@ -322,101 +293,80 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
 
-    CameraObject came;
+    private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
+        private String contentType = "";
 
-        private class DownloadWebPageTask extends AsyncTask<String, Void, String> {
-            private String contentType = "";
+        @Override
+        @SuppressWarnings("deprecation")
+        protected String doInBackground(String... urls) {
+            String response = "";
+            HttpURLConnection urlConnection = null;
+            try {
+                parserFactory = XmlPullParserFactory.newInstance();
+                XmlPullParser parser = parserFactory.newPullParser();
+                XmlPullParser parser1 = parser;
+                InputStream is = getAssets().open("CCTV.kml");
+                // Content type should be "application/vnd.google-earth.kml+xml"
+                 parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
+                 parser.setInput(is, null);
+                 String aux;
+                 int eventType = parser.getEventType();
+                 CameraObject camera = new CameraObject("", "", null);
+                 while (eventType != XmlPullParser.END_DOCUMENT) {
+                     String elementName = null;
+                     elementName = parser.getName();
+                     switch (eventType) {
+                         case XmlPullParser.START_TAG:
+                             if ("Placemark".equals(elementName)) {
+                                 camera = new CameraObject("", "", null);
+                             } else if ("description".equals(elementName)) {
+                                 String cameraURL = parser.nextText();
+                                 cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
+                                 cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
+                                 camera.setUrl(cameraURL);
+                                 response += cameraURL + "\n";
+                             } else if ("Data".equals(elementName)) {
+                                 aux = parser.getAttributeValue(null, "name");
+                                 if (aux.equals("Nombre")) {
+                                     String aux1;
+                                     parser.nextTag();
+                                     aux1 = parser.nextText();
+                                     nameURLS_ArrayList.add(aux1);
+                                     camera.setNombre(aux1);
+                                 } else {
+                                 }
+                             } else if ("coordinates".equals(elementName)) {
+                                 String coorURL = parser.nextText();
+                                 String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
+                                 String lon = coorURL.substring(0, coorURL.indexOf(","));
+                                 camera.setCoordinates(new LatLng(Double.valueOf(lat).doubleValue(), Double.valueOf(lon).doubleValue()));
+                                 cameras.add(camera);
+                             }
+                             break;
+                     }
+                     eventType = parser.next();
+                 }
 
-            @Override
-            @SuppressWarnings("deprecation")
-            protected String doInBackground(String... urls) {
-                String response = "";
-
-                HttpURLConnection urlConnection = null;
-                try {
-
-                    parserFactory = XmlPullParserFactory.newInstance();
-                    XmlPullParser parser = parserFactory.newPullParser();
-                    XmlPullParser parser1 = parser;
-
-                    InputStream is = getAssets().open("CCTV.kml");
-                    // Content type should be "application/vnd.google-earth.kml+xml"
-
-                    parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
-                    parser.setInput(is, null);
-                    String aux;
-                    int eventType = parser.getEventType();
-                    CameraObject camera = new CameraObject("", "", null);
-                    while (eventType != XmlPullParser.END_DOCUMENT) {
-                        String elementName = null;
-                        elementName = parser.getName();
-                        switch (eventType) {
-                            case XmlPullParser.START_TAG:
-                                if ("Placemark".equals(elementName)) {
-                                    camera = new CameraObject("", "", null);
-                                } else if ("description".equals(elementName)) {
-                                    String cameraURL = parser.nextText();
-                                    cameraURL = cameraURL.substring(cameraURL.indexOf("http:"));
-                                    cameraURL = cameraURL.substring(0, cameraURL.indexOf(".jpg") + 4);
-                                    //camerasURLS_ArrayList.add(cameraURL);
-                                    camera.setUrl(cameraURL);
-                                    response += cameraURL + "\n";
-                                } else if ("Data".equals(elementName)) {
-                                    aux = parser.getAttributeValue(null, "name");
-                                    //    Log.v("EEEEE", aux );
-                                    if (aux.equals("Nombre")) {
-                                        String aux1;
-                                        parser.nextTag();
-                                        aux1 = parser.nextText();
-                                        //              Log.v("aux1", aux1);
-                                        nameURLS_ArrayList.add(aux1);
-                                        camera.setNombre(aux1);
-                                    } else {
-
-                                    }
-                                    ;
-
-                                } else if ("coordinates".equals(elementName)) {
-                                    String coorURL = parser.nextText();
-                                    //coorURLS_ArrayList.add(coorURL);
-                                    String lat = coorURL.substring((coorURL.indexOf(",")) + 1, coorURL.length() - 4);
-                                    String lon = coorURL.substring(0, coorURL.indexOf(","));
-                                    // coorURLS_ArrayList.add(new LatLng(Double.valueOf(lat).doubleValue(),Double.valueOf(lon).doubleValue()));
-                                    // coor=new LatLng(Double.valueOf(parser.nextText()).doubleValue());
-                                    camera.setCoordinates(new LatLng(Double.valueOf(lat).doubleValue(), Double.valueOf(lon).doubleValue()));
-                                    cameras.add(camera);
-                                }
-                                break;
-                        }
-                        eventType = parser.next();
-                    }
-
-                } catch (Exception e) {
-                    response = e.toString();
-                }
-
-                return response;
+            } catch (Exception e) {
+                response = e.toString();
             }
+
+            return response;
+        }
 
             @Override
             protected void onPostExecute(String result) {
 
                 lv = (ListView) findViewById(R.id.lv);
-               // lv.setChoiceMode(ListView.CHOICE_MODE_SINGLE);
                 Collections.sort(nameURLS_ArrayList);
                 Collections.sort(cameras, new Comparator<CameraObject>() {
                     @Override
                     public int compare(CameraObject o1, CameraObject o2) {
-                        return o1.getNombre().compareTo(o2.getNombre());
-
+                    return o1.getNombre().compareTo(o2.getNombre());
                     }
                 });
                 CamerasArrayAdapter countryArrayAdapter = new CamerasArrayAdapter( MainActivity.this, cameras );//nameURLS_ArrayList );
                 lv.setAdapter(countryArrayAdapter);
-                //ArrayAdapter adapter = new ArrayAdapter(MainActivity.this, android.R.layout.simple_list_item_checked, nameURLS_ArrayList);
-                //lv.setAdapter(adapter);
-
-
 
                 lv.setClickable(true);
 
@@ -425,22 +375,16 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     CameraObject came = cameras.get(posicion);
                     ImageView im = (ImageView) ((AppCompatActivity) MainActivity.this).findViewById(R.id.imageView);
                     im.setImageBitmap(imagenGuardada);
-                    //task.execute( camerasURLS_ArrayList.get(position) );
                 }
 
                 lv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
                     @Override
                     public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
-                        //Object o = lv.getItemAtPosition(position);
                         CameraObject co = (CameraObject) lv.getItemAtPosition(position);
-                        //String str = (String) o;//As you are using Default String Adapter
                         String str=(String)co.getNombre();
-                        //Toast.makeText(getApplicationContext(),str,Toast.LENGTH_SHORT).show();
-                        //text.setText(camerasURLS_ArrayList.get(pos));
                         pos = position;
                         posicion = position;
-                        //text.setText(co.getUrl());
 
                         came = null;
                         for (int i = 0; i < cameras.size(); i++) {
@@ -451,15 +395,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                         }
                         destino=came.getCoordinates();
                         CargaImagenes task = new CargaImagenes();
-                        //task.execute( camerasURLS_ArrayList.get(position) );
                         task.execute(came);
 
                     }
                 });
-                /*for(int i=0; i<marcados.size();i++){
-                    View view = lv.getChildAt(1);
-                    aplicaCambio(view);
-                }*/
             }
         }
 
@@ -491,6 +430,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 super.onPostExecute(result);
                 ImageView im = (ImageView) ((AppCompatActivity) MainActivity.this).findViewById(R.id.imageView);
                 im.setImageBitmap(result);
+               // cambio=true;
                 im.setOnClickListener(new View.OnClickListener() {
                     public void onClick(View v) {
                         imagenGuardada = null;
@@ -634,11 +574,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 for (int i = 0; i < MQTTchannels.size(); i++) {
                     if (!subscribedTopics.contains("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey())) {
                         subscribedTopics.add("channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
-
+                        actualsubs++;
                         Log.v("MQTTCHAN", "channels/" + MQTTchannels.get(i).getId() + "/subscribe/fields/field1/" + MQTTchannels.get(i).getReadKey());
                         MQTT_handler mqtthand = new MQTT_handler(i, MQTTchannels.get(i));
                         mqtthand.MQTT_handler_start(MQTTchannels.get(i), getApplicationContext());
-                        actualsubs++;
+                        //actualsubs++;
                       //  MQTTchannels.get(i).setClosestCamera(CameraProx(MQTTchannels.get(i).coordinates));
                         handlers.add(mqtthand);
                     } else  {
