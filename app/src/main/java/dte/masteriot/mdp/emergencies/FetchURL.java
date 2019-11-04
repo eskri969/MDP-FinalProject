@@ -47,6 +47,7 @@ public class FetchURL extends AsyncTask<String, Void, String> {
         return data;
     }
 
+    //pasa de string a inputstream para poder parsear el archivo
     public InputStream givenUsingPlainJava_whenConvertingStringToInputStream_thenCorrect(String s)
             throws IOException {
          targetStream = new ByteArrayInputStream(s.getBytes(StandardCharsets.UTF_8));
@@ -57,20 +58,15 @@ public class FetchURL extends AsyncTask<String, Void, String> {
     protected void onPostExecute(String s) {
         super.onPostExecute(s);
         String sa="";
-        //PointsParser parserTask = new PointsParser(mContext, directionMode);
-        // Invokes the thread for parsing the JSON data
-        //parserTask.execute(s);
         try {
+            //de toda la respuesta me quedo con la parte de las coordenadas
             sa = parseador(s);
         }catch (Exception e){
 
         }
-        //parserTask.execute(s);
-        //pasando callback (Intent?)
+        //se lo mandamos a este metodo que guarda las coordenadas en un arraylist de LatLng
+        //y  asi cargarlo al polyline
         ma.adaptador(sa);
-
-
-        //return response;
     }
 
     private String downloadUrl(String strUrl) throws IOException {
@@ -103,30 +99,24 @@ public class FetchURL extends AsyncTask<String, Void, String> {
         return data;
     }
 
+    //METODO PARA QUEDARME SOLO CON EL STRING DE COORDENADAS
     private String parseador(String s) throws IOException {
         String cameraURL="";
         targetStream=givenUsingPlainJava_whenConvertingStringToInputStream_thenCorrect(s);
         XmlPullParserFactory parserFactory;
-        String response="";
         try {
-
             parserFactory = XmlPullParserFactory.newInstance();
             XmlPullParser parser = parserFactory.newPullParser();
 
-            //     InputStream is =getAssets().open("CCTV.kml");
-            // Content type should be "application/vnd.google-earth.kml+xml"
-
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false);
             parser.setInput(targetStream, null);
-            String aux;
             int eventType = parser.getEventType();
             while (eventType != XmlPullParser.END_DOCUMENT) {
                 String elementName = null;
                 elementName = parser.getName();
                 switch (eventType) {
                     case XmlPullParser.START_TAG:
-                        if ("coordinates".equals(elementName)) {
-
+                        if ("coordinates".equals(elementName)) {//buscamos el campo con las coordenadas
                             cameraURL = parser.nextText();
                             Log.v("coordinates", cameraURL);
                         }
@@ -136,7 +126,7 @@ public class FetchURL extends AsyncTask<String, Void, String> {
             }
 
         } catch (Exception e) {
-            //  response = e.toString();
+              cameraURL = e.toString();//caso de fallo
         }
 
             return cameraURL;

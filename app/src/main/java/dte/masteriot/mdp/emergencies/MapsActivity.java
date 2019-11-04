@@ -4,9 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.support.design.widget.TabLayout;
 import android.support.v4.app.FragmentActivity;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
@@ -35,15 +33,25 @@ import static java.lang.Double.parseDouble;
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback, TaskLoadedCallback {
 
     private GoogleMap mMap;
+    //Bundle parametros
+    //tres posiciones que se graficaran
     LatLng datos, location, canal=null;
-    RadioButton uno, dos, tres;
-    RadioButton uno1, dos1;
-    RadioButton muno, mdos, mtres;
-
-    Polyline currentPolyline;
     String nombre, contaminacion;
-    String mode = "motorcar";
+
+    //botones para seleccionar el tipo de mapa
+    RadioButton uno, dos, tres;
+
+    //botones para hacerlo visible o invisible
+    RadioButton uno1, dos1;
+    //donde se guarda la ruta
+    Polyline currentPolyline;
     PolylineOptions po = new PolylineOptions();
+
+
+    //botones para elegir el tipo de vehiculo
+    RadioButton muno, mdos, mtres;
+    String mode = "motorcar";
+    Boolean visible=true;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,6 +62,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
 
         mapFragment.getMapAsync(this);
+        //extraemos los parametros que se nos pasan
         Bundle parametros = this.getIntent().getParcelableExtra("bundle");
         datos = (LatLng) parametros.getParcelable("coordinates");
         location= (LatLng) parametros.getParcelable("location");
@@ -63,7 +72,14 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         if(contaminacion==null){
             contaminacion="no data";
         }
-
+        uno=(RadioButton) findViewById(R.id.hybrid);
+        dos=(RadioButton) findViewById(R.id.maps);
+        tres=(RadioButton) findViewById(R.id.satelite);
+        uno1=(RadioButton) findViewById(R.id.uno1);
+        dos1=(RadioButton) findViewById(R.id.dos1);
+        muno=(RadioButton) findViewById(R.id.car);
+        mdos=(RadioButton) findViewById(R.id.bici);
+        mtres=(RadioButton) findViewById(R.id.pie);
 
     }
 
@@ -82,44 +98,39 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String url = getUrl(location, datos, mode);
         new FetchURL(MapsActivity.this, this).execute(url, mode);
         mMap = googleMap;
-        // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
+        // Add markers
         mMap.addMarker(new MarkerOptions().position(datos).icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)).title(nombre).snippet("Latest value: " + contaminacion));//.title("Marker in Sydney"));
         mMap.addMarker(new MarkerOptions().position(location).title("Current position")); //****
-        //      mMap.moveCamera(CameraUpdateFactory.newLatLng(datos));
-        //      mMap.animateCamera( CameraUpdateFactory.zoomTo( 13.0f ) );
         if(canal!=null){
             mMap.addMarker(new MarkerOptions().position(canal).icon(bitmapDescriptorFromVector(this, R.drawable.ic_marker1)).anchor(0.5f,0.5f).title("PELIGRO").snippet("Value: " + contaminacion + " NO2"));//.title("Marker in Sydney"));
 
         }
 
-
-        uno=(RadioButton) findViewById(R.id.hybrid);
-        dos=(RadioButton) findViewById(R.id.maps);
-        tres=(RadioButton) findViewById(R.id.satelite);
-        uno1=(RadioButton) findViewById(R.id.uno1);
-        dos1=(RadioButton) findViewById(R.id.dos1);
-        muno=(RadioButton) findViewById(R.id.car);
-        mdos=(RadioButton) findViewById(R.id.bici);
-        mtres=(RadioButton) findViewById(R.id.pie);
-
+        //configuracion de la ruta
         po.add(location) .width(5).color(Color.RED);
         currentPolyline= mMap.addPolyline(po);
-        currentPolyline.setVisible(true);
+        //currentPolyline.setVisible(true);
+        if(visible==false){
+            currentPolyline.setVisible(false);
+        }
+        //configuramos los limites para que incluya la vista los dos puntos
         LatLngBounds.Builder builder = new LatLngBounds.Builder();
         builder.include(datos);
         builder.include(location);
         LatLngBounds bounds = builder.build();
         int width = getResources().getDisplayMetrics().widthPixels;
         int height = getResources().getDisplayMetrics().heightPixels;
-        int padding = (int) (width * 0.15); // offset from edges of the map 10% of screen
+        int padding = (int) (width * 0.15); // offset from edges of the map 15% of screen
 
         CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, width, height, padding);
 
+        //centramos la camara
         mMap.animateCamera(cu);
         mMap.moveCamera(cu);
 
     }
+
+    //metodo para adaptar el tamaño de la imagen de emergencia
     private BitmapDescriptor bitmapDescriptorFromVector(Context context, int vectorResId) {
         Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
         vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
@@ -128,6 +139,8 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         vectorDrawable.draw(canvas);
         return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
+
+    //Gestor del primer radio button
     public void onRadioButtonClicked(View view) {
         // Is the button now checked?
         boolean checked = ((RadioButton) view).isChecked();
@@ -137,25 +150,40 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case R.id.hibrido:
                 if (checked)
                     mMap.setMapType(4);
-                //  dos.setChecked(false);
-                //  tres.setChecked(false);
                 break;
             case R.id.maps:
                 if (checked)
                     mMap.setMapType(1);
-                //  uno.setChecked(false);
-                //  tres.setChecked(false);
-
                 break;
             case R.id.satelite:
                 if (checked)
                     mMap.setMapType(2);
-                //  uno.setChecked(false);
-                //  dos.setChecked(false);
                 break;
         }
     }
 
+
+    //gestor del segundo radiobutton
+    public void onRadioButtonClicked1(View view) {
+        // Is the button now checked?
+        boolean checked = ((RadioButton) view).isChecked();
+
+        // Check which radio button was clicked
+        switch(view.getId()) {
+            case R.id.uno1:
+                if (checked)
+                    currentPolyline.setVisible(true);
+                    visible=true;
+                break;
+            case R.id.dos1:
+                if (checked)
+                    currentPolyline.setVisible(false);
+                    visible=false;
+                break;
+        }
+    }
+
+    //gestor del tercer radiobutton
     public void onRadioButtonClicked3(View view) {
         // Is the button now checked?
         boolean checked = ((RadioButton) view).isChecked();
@@ -167,57 +195,21 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             case R.id.bici:
                 if (checked)
                     mode = "bicycle";
-
                 currentPolyline.remove();
-
                 mapFragment.getMapAsync(this);
-                //  dos.setChecked(false);
-                //  tres.setChecked(false);
                 break;
             case R.id.pie:
                 if (checked)
                     mode = "moped";
-
                 currentPolyline.remove();
-
                 mapFragment.getMapAsync(this);
-
-                //  uno.setChecked(false);
-                //  tres.setChecked(false);
-
                 break;
             case R.id.car:
                 if (checked)
                     mode = "motorcar";
                 currentPolyline.remove();
                 mapFragment.getMapAsync(this);
-                //  uno.setChecked(false);
-                //  dos.setChecked(false);
                 break;
-        }
-    }
-
-    public void onRadioButtonClicked1(View view) {
-        // Is the button now checked?
-        boolean checked = ((RadioButton) view).isChecked();
-
-        // Check which radio button was clicked
-        switch(view.getId()) {
-            case R.id.uno1:
-                if (checked)
-                    currentPolyline.setVisible(true);
-
-                //  dos.setChecked(false);
-                //  tres.setChecked(false);
-                break;
-            case R.id.dos1:
-                if (checked)
-                    currentPolyline.setVisible(false);
-                //  uno.setChecked(false);
-                //  tres.setChecked(false);
-
-                break;
-
         }
     }
 
@@ -227,8 +219,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         String mode = "v=" + directionMode;
         String parameters = str_origin + "&" + str_dest + "&" + mode;
         String url = "http://www.yournavigation.org/api/1.0/gosmore.php?format=kml&" + parameters; //+ "&key=" + getString(R.string.google_maps_key);
-        //Log.v("pau", url);
-
         return url;
     }
 
@@ -250,8 +240,6 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             po.add(ll);
 
         }
-        //   po.setPoints(cords);
-
         currentPolyline.setPoints(cords);
     }
 }
